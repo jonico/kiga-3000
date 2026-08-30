@@ -65,15 +65,15 @@ public class KarteiKarteComparator implements Comparator {
 		Karteikarte right = (Karteikarte) arg1;
 
 		int result = text(left.getKindNachname(), right.getKindNachname());
-		if (result != 0) {
+		if (0 != result) {
 			return result;
 		}
 		result = text(left.getKindVorname(), right.getKindVorname());
-		if (result != 0) {
+		if (0 != result) {
 			return result;
 		}
 		result = date(left.getKindGeburtsDatum(), right.getKindGeburtsDatum());
-		if (result != 0) {
+		if (0 != result) {
 			return result;
 		}
 		return text(left.getKindWohnung(), right.getKindWohnung());
@@ -109,7 +109,7 @@ public class KarteiKarteComparator implements Comparator {
 
 	/** @return the date as uuuu-MM-dd, or "" if absent or unparseable */
 	private static String normalise(String datum) {
-		if (datum == null || datum.trim().isEmpty()) {
+		if (null == datum || datum.trim().isEmpty()) {
 			return "";
 		}
 		try {

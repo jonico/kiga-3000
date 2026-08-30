@@ -55,7 +55,7 @@ public class KarteikarteControl {
 	public void ladeKarteiEinzel(KarteikarteImpl karteikarte, int karteiId) {
 		boolean ok = true;
 		ok = this.ladeKartei(karteikarte, karteiId);
-		if (ok != true) {
+		if (true != ok) {
 			_logger.warning(messenger.getMessage("Kiga.DataChild"));
 			JOptionPane.showMessageDialog(null, messenger
 					.getMessage("Kiga.DataChild"), messenger
@@ -234,7 +234,7 @@ public class KarteikarteControl {
 	private void reportInvalidData(ConstraintViolationException cve) {
 		StringBuilder detail = new StringBuilder();
 		for (ConstraintViolation<?> violation : cve.getConstraintViolations()) {
-			if (detail.length() > 0) {
+			if (0 < detail.length()) {
 				detail.append('\n');
 			}
 			detail.append(violation.getPropertyPath()).append(": ")

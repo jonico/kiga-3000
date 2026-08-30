@@ -164,9 +164,9 @@ private boolean isInitialized = false;
          connection = null; 
        }
      }
-     if (connection == null)
+     if (null == connection)
      {
-       if (maxConnections == 0 || numberBusyConnections < maxConnections)
+       if (0 == maxConnections || numberBusyConnections < maxConnections)
          connection = addConnection();
      }
      return connection;
@@ -183,12 +183,12 @@ private boolean isInitialized = false;
      Connection connection = null;
      try
      {
-       if (user == null || password == null) 
+       if (null == user || null == password) 
          connection = DriverManager.getConnection(url);
        else 
          connection = DriverManager.getConnection(url, user, password);
  
-       if (connection == null){
+       if (null == connection){
     	 _logger.severe(sysMessenger.getMessage("KiGa.log.DrvManag", url));
          throw new PoolException(sysMessenger.getMessage("KiGa.log.DrvManag", url));
        }   

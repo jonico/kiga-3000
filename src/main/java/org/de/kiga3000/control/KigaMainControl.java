@@ -80,7 +80,7 @@ public class KigaMainControl {
 			try (InputStream inp =
 					org.de.kiga3000.KigaResources.open(
 							org.de.kiga3000.KigaResources.LOGGING_CONFIG)) {
-				if (inp == null) {
+				if (null == inp) {
 					throw new java.io.FileNotFoundException(
 							org.de.kiga3000.KigaResources.LOGGING_CONFIG);
 				}

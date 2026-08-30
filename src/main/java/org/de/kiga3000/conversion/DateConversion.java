@@ -96,7 +96,7 @@ public class DateConversion {
     public String DateToLocalDate(Date datum) throws ParseException {
         // The original compared a Date against the strings "" and "0000-00-00", which
         // can never be true. A null check is what was actually meant.
-        if (datum == null) {
+        if (null == datum) {
             return "";
         }
         return DISPLAY_FORMAT.format(

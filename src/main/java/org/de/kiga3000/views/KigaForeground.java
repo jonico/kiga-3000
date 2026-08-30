@@ -77,7 +77,7 @@ public final class KigaForeground {
             LOGGER.fine("could not request foreground: " + e.getMessage());
         }
 
-        if (window == null) {
+        if (null == window) {
             return;
         }
 

@@ -37,7 +37,7 @@ public final class KarteikarteRepository {
      * validates it against the live schema - so it is built once and reused.
      */
     private static synchronized EntityManagerFactory factory() {
-        if (factory == null || !factory.isOpen()) {
+        if (null == factory || !factory.isOpen()) {
             factory = Persistence.createEntityManagerFactory(PERSISTENCE_UNIT);
         }
         return factory;
@@ -45,7 +45,7 @@ public final class KarteikarteRepository {
 
     /** Releases the factory and with it the HikariCP pool. */
     public static synchronized void shutdown() {
-        if (factory != null && factory.isOpen()) {
+        if (null != factory && factory.isOpen()) {
             factory.close();
         }
         factory = null;
@@ -66,7 +66,7 @@ public final class KarteikarteRepository {
     /** Loads a card into an existing instance, matching the old DAO's shape. */
     public static void fill(KarteikarteImpl target, int id) {
         KarteikarteImpl found = find(id);
-        if (found != null) {
+        if (null != found) {
             copy(found, target);
         }
     }
@@ -100,7 +100,7 @@ public final class KarteikarteRepository {
     public static boolean delete(int id, byte gruppe) {
         return inTransaction(em -> {
             KarteikarteImpl karte = em.find(KarteikarteImpl.class, id);
-            if (karte == null || karte.getGruppe() != gruppe) {
+            if (null == karte || karte.getGruppe() != gruppe) {
                 return false;
             }
             em.remove(karte);

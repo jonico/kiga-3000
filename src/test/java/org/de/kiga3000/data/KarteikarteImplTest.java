@@ -49,17 +49,17 @@ public class KarteikarteImplTest {
         Map<String, Method> getters = new TreeMap<>();
         Map<String, Method> setters = new TreeMap<>();
         for (Method m : KarteikarteImpl.class.getMethods()) {
-            if (m.getDeclaringClass() == Object.class) {
+            if (Object.class == m.getDeclaringClass()) {
                 continue;
             }
             // Keyed case-insensitively on purpose: this class spells one field
             // getGesundheitsHinweise / setGesundheitshinweise, and a case-sensitive
             // pairing would silently drop it from the round trip.
-            if (m.getName().startsWith("get") && m.getParameterCount() == 0
-                    && m.getReturnType() == String.class) {
+            if (m.getName().startsWith("get") && 0 == m.getParameterCount()
+                    && String.class == m.getReturnType()) {
                 getters.put(m.getName().substring(3).toLowerCase(), m);
-            } else if (m.getName().startsWith("set") && m.getParameterCount() == 1
-                    && m.getParameterTypes()[0] == String.class) {
+            } else if (m.getName().startsWith("set") && 1 == m.getParameterCount()
+                    && String.class == m.getParameterTypes()[0]) {
                 setters.put(m.getName().substring(3).toLowerCase(), m);
             }
         }

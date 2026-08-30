@@ -128,7 +128,7 @@ public final class KigaApiServer implements AutoCloseable {
                 default -> null;
             };
 
-            if (body == null) {
+            if (null == body) {
                 respond(exchange, 404, Json.error(404, "No such resource: " + path));
             } else {
                 respond(exchange, 200, body);
@@ -151,7 +151,7 @@ public final class KigaApiServer implements AutoCloseable {
 
     private String cardsByGruppe(String raw) {
         int gruppe = Integer.parseInt(raw);
-        if (gruppe < 0 || gruppe > 255) {
+        if (0 > gruppe || 255 < gruppe) {
             throw new NotFound("No such group: " + raw);
         }
         List<CardSummary> cards = source.byGruppe((byte) gruppe);

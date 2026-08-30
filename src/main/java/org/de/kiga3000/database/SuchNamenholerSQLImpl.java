@@ -55,7 +55,7 @@ public class SuchNamenholerSQLImpl
 		byte gruppenanfang,
 		byte gruppenende)
 		throws SQLException, KigaException {
-		if (gruppenanfang>gruppenende || gruppenanfang<1)
+		if (gruppenanfang>gruppenende || 1>gruppenanfang)
 			throw new KigaException(messenger.getMessage("KiGa.WrongGroups"));
 		p.setString(1,nachname);
 		p.setByte(2, gruppenanfang);

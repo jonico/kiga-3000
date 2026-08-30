@@ -51,11 +51,11 @@ public final class KigaAppIcon {
      */
     public static void install(Window window) {
         BufferedImage icon = loadSquareIcon();
-        if (icon == null) {
+        if (null == icon) {
             return;
         }
 
-        if (window != null) {
+        if (null != window) {
             window.setIconImage(icon);
         }
 
@@ -82,13 +82,13 @@ public final class KigaAppIcon {
      */
     static BufferedImage loadSquareIcon() {
         URL url = KigaAppIcon.class.getResource(ICON_RESOURCE);
-        if (url == null) {
+        if (null == url) {
             LOGGER.warning("application icon not found on the classpath: " + ICON_RESOURCE);
             return null;
         }
         try (InputStream in = KigaAppIcon.class.getResourceAsStream(ICON_RESOURCE)) {
             BufferedImage source = ImageIO.read(in);
-            if (source == null) {
+            if (null == source) {
                 LOGGER.warning("application icon could not be decoded: " + ICON_RESOURCE);
                 return null;
             }

@@ -60,7 +60,7 @@ public final class KigaResources {
     private static File installDir() {
         try {
             String configured = new Configuration().getConfig(INSTALL_DIR_KEY);
-            if (configured == null || configured.trim().isEmpty()) {
+            if (null == configured || configured.trim().isEmpty()) {
                 return null;
             }
             File dir = new File(configured.trim());
@@ -80,7 +80,7 @@ public final class KigaResources {
      */
     public static URL locate(String resourcePath) {
         File dir = installDir();
-        if (dir != null) {
+        if (null != dir) {
             File candidate = new File(dir, resourcePath);
             if (candidate.isFile()) {
                 try {
@@ -91,7 +91,7 @@ public final class KigaResources {
             }
         }
         URL fromClasspath = KigaResources.class.getResource(resourcePath);
-        if (fromClasspath == null) {
+        if (null == fromClasspath) {
             LOGGER.warning("resource not found on the classpath: " + resourcePath);
         }
         return fromClasspath;
