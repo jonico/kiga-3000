@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  JPA configuration for the card index.
+
+  Round 2 of the modernization moved every rung this file used to sit on forward,
+  driven by org.de.kiga3000.MigratePersistenceStack in rewrite.yml:
+      jakarta.persistence 3.2  (was javax.persistence 2.2; the namespace move and the
+                                xmlns/property renames below come from
+                                JavaxPersistenceToJakartaPersistence and
+                                JavaxPersistenceXmlToJakartaPersistenceXml)
+      Hibernate 7.4.6.Final    (was 5.6.15.Final, via MigrateToHibernate60..71)
+      MySQLDialect             (was MySQL8Dialect: the version-specific dialects were
+                                deprecated in Hibernate 6.0 and removed in 6.2, and
+                                org.openrewrite.hibernate.MigrateDialect prescribes the
+                                generic MySQLDialect as the replacement. Hibernate now
+                                logs HHH90000025 to say the property is redundant
+                                because it would pick MySQLDialect anyway; the setting
+                                is kept because it is still valid and removing it is
+                                not part of this migration.)
+      HikariCP 7.1.0           (was 5.1.0)
+
+  Connections come from HikariCP via Hibernate's HikariCPConnectionProvider rather
+  than from Hibernate's built-in DriverManager pool, which its own documentation
+  describes as unsuitable for anything but tests. The application's hand-rolled
+  ConnectionPool - 253 lines with a Timer-based "ConnectionKiller" - still serves the
+  remaining JDBC search queries; replacing that too is a separate change.
+
+  Note what is NOT here: the two workarounds the JDBC URL used to carry,
+  sessionVariables=sql_mode='ALLOW_INVALID_DATES' and zeroDateTimeBehavior=ROUND.
+  They existed only to keep the '0000-00-00' sentinel alive. The date columns are
+  nullable now, so the connection no longer weakens the server's date validation.
+-->
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd"
+             version="3.2">
+
+  <persistence-unit name="kiga3000" transaction-type="RESOURCE_LOCAL">
+    <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+
+    <class>org.de.kiga3000.data.KarteikarteImpl</class>
+    <class>org.de.kiga3000.data.DateStringConverter</class>
+    <!-- Only the classes listed above; do not scan the jar. -->
+    <exclude-unlisted-classes>true</exclude-unlisted-classes>
+
+    <properties>
+      <property name="jakarta.persistence.jdbc.driver" value="com.mysql.cj.jdbc.Driver"/>
+      <property name="jakarta.persistence.jdbc.url"
+                value="jdbc:mysql://localhost/Kindergarten"/>
+      <property name="jakarta.persistence.jdbc.user" value="KiGa"/>
+      <property name="jakarta.persistence.jdbc.password" value="Kiga3000"/>
+
+      <property name="hibernate.dialect" value="org.hibernate.dialect.MySQLDialect"/>
+
+      <!-- Validate the mapping against the live schema at startup, never alter it.
+           A mismatch between the 39 mapped fields and the table is then a startup
+           failure with a clear message rather than a surprise at runtime. -->
+      <property name="hibernate.hbm2ddl.auto" value="validate"/>
+
+      <!-- HikariCP as the connection pool. -->
+      <property name="hibernate.connection.provider_class"
+                value="org.hibernate.hikaricp.internal.HikariCPConnectionProvider"/>
+      <property name="hibernate.hikari.maximumPoolSize" value="10"/>
+      <property name="hibernate.hikari.minimumIdle" value="2"/>
+      <property name="hibernate.hikari.idleTimeout" value="30000"/>
+      <property name="hibernate.hikari.poolName" value="KiGa3000Pool"/>
+      <!-- Surfaces a leaked connection as a warning instead of a silent stall; the
+           hand-rolled pool had no equivalent. -->
+      <property name="hibernate.hikari.leakDetectionThreshold" value="20000"/>
+
+      <!-- Bean Validation runs on insert and update. This is what makes the column
+           length limits declared on the entity actually enforced, instead of an
+           over-long value reaching MySQL and returning as a raw
+           "Data truncation: Data too long for column" error. -->
+      <property name="jakarta.persistence.validation.mode" value="AUTO"/>
+
+      <property name="hibernate.show_sql" value="false"/>
+      <property name="hibernate.format_sql" value="false"/>
+    </properties>
+  </persistence-unit>
+</persistence>

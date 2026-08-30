@@ -1,0 +1,24 @@
+{
+  "arm": "arm-a2",
+  "transcript": "/private/tmp/claude-502/-Users-johannes-nicolai-postman-com/6d2f8886-1e8a-4107-903b-dfc9b353fe7b/tasks/a9165c96a28aa43b8.output",
+  "agent_active_seconds": 647.4,
+  "stalled_seconds": 1216.0,
+  "stall_events": 4,
+  "stall_threshold_seconds": 45.0,
+  "raw_span_seconds": 1863.4,
+  "first_entry": "2026-08-29T18:37:00.972000+00:00",
+  "last_entry": "2026-08-29T19:08:04.383000+00:00",
+  "assistant_turns": 118,
+  "tool_calls": 72,
+  "tool_denials": 1,
+  "models": {
+    "claude-opus-5": 117,
+    "<synthetic>": 1
+  },
+  "input_tokens_uncached": 234,
+  "cache_creation_input_tokens": 616873,
+  "cache_read_input_tokens": 10719016,
+  "input_tokens_total": 11336123,
+  "output_tokens": 53694,
+  "billable_tokens_total": 11389817
+}

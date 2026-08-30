@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
+<HTML>
+<HEAD>
+	<META HTTP-EQUIV="CONTENT-TYPE" CONTENT="text/html; charset=utf-8">
+	<TITLE>KiGa 3000</TITLE>
+	<META NAME="GENERATOR" CONTENT="OpenOffice.org 1.1.1  (Linux)">
+	<META NAME="CREATED" CONTENT="20041222;17401200">
+	<META NAME="CHANGED" CONTENT="20041222;17422600">
+	<STYLE>
+	<!--
+		@page { size: 21cm 29.7cm; margin: 2cm }
+		P { margin-bottom: 0.21cm }
+	-->
+	</STYLE>
+</HEAD>
+<BODY LANG="de-DE" DIR="LTR">
+<h1>KiGa 3000</h1>
+<p>
+This version is the second one I have posted to the site in order to measure the interests concerning this program.
+With this release, you still have to spend some efforts, in order to begin:
+</p>
+<h3>1. Database</h3>
+
+<p>
+You can use any JDBC driver to connect to your data base, simply edit Ressourcen.java and change the data base string there.
+At this point, mysql is preconfigured. You will not need to install the mysql jdbc driver in your class path, because it is already included in the com directory.
+Create a database named Kindergarten and execute the script inside the file datenbanktabelle to create the needed table for the program.
+</p>
+
+<h3>2. Log File</h3>
+
+<p>
+Open file <i>/installtionsDirectory/</i>org/kiga300/de/properties/config.properties<br>
+fill in path of your <i>/installtionsDirectory/</i> at parameter <b>KiGaLoggingPath=</b>
+</p>
+
+<h3>3. Online help / introduction screen</h3>
+<p>
+An online help is not available in this release. You can write your own one if you like and link it
+with the program or simply contact me in order to get one. 
+The help was replaced by a nice logo and some file to be found in the titlepage directory.
+You have to copy the files in it on a place you like to have them and then change the link in Kiga3000MainPanel.java, or you install them to /tmp (default).  
+</p>
+
+<h3>
+4. Look and Feel (L&amp;F)</h3>
+<p>
+The program was written with birosofts look and feel that is a really cool and freely available package. If you comment out some lines in KiGa3000Main.java, you will get back your platform specific look again.
+</p>
+<h3>5. Installation</h3>
+<p>
+In this release, you do not have an installation routine, but you will find precompiled class files in it. You can simply build a jar file out of it (see the file Manifest.mf for details).
+</p>
+<h3>
+6. Documentation
+</h3>
+<p>
+The source code is well documented, if you find bugs or have suggestions to improve the code, please contact me. Please note that most of the classes have German names.
+</p>
+<h3>
+7. Language
+</h3>
+<p>
+German and English is supported. If you like to translate the programs in other languages you are welcome. I will publish your results on the site. Please note that the German Umlauts may be not displayed correctly (there are differences between Windows and Linux java versions).
+</p>
+<h3>
+8. Limitations
+</h3>
+<p>
+Currently, the program only supports 8 differnt groups. If you like more, you simply have to ask me or look into the source.
+</p>
+<h3>
+9. Screenshots
+</h3>
+<p>
+Please look at the sourceforge screenshot section. I try to post some shots there. If you have some interesting ones, let me know.
+</p>
+<h3>10. Legal stuff
+</h3>
+<p>For legal reasons, data of childrens that have left the kindergarten for more than one year will be removed automatically by the program.
+This software is available under the license of the GPL. The mysql JDBC driver and the liquid look and feel have their own licenses you have to agree with if you want to use these components, see README.mysql and README.liquid for details.
+<h3>11. Contact</h3>
+<p>
+If you feel attracted by the project, please write feedback and any suggestions to johannes_nicolai@tiscalinet.de
+</p>
+</BODY>
+</HTML>

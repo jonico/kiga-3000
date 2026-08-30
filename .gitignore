@@ -1,0 +1,8 @@
+target/
+bin/
+*.class
+!legacy/**/*.class
+!lib/repo/**
+.idea/
+*.iml
+.DS_Store

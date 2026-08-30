@@ -1,0 +1,4 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion>
+  <groupId>com.birosoft</groupId><artifactId>liquidlnf</artifactId><version>0.2.8</version><packaging>jar</packaging>
+  <description>Vendored from the KiGa 3000 CVS repository (2006 snapshot). Not from Maven Central.</description>
+</project>

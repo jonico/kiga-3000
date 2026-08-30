@@ -1,0 +1,8 @@
+<?xml version='1.0' encoding='ISO-8859-1'?>
+<id xmlns="org.de.kiga3000" :ID="0" xmlns:="org.de.kiga3000" >
+  <street xmlns="org.de.kiga3000"/>
+  <plz/>
+  <city/>
+  <region/>
+  <country/>
+</id>

@@ -1,0 +1,236 @@
+####################################################################################
+# KiGa 3000: declarative OpenRewrite recipes for the modernization of this codebase.
+#
+# Round 1 was Java 8 -> Java 21; round 2 (the last two recipes in this file) is
+# Java 21 -> Java 25 plus Hibernate 5.6 -> 7.4 and the javax -> jakarta namespace move.
+#
+# Everything here is composed exclusively out of *published* OpenRewrite recipes
+# (rewrite-java, rewrite-java-dependencies, rewrite-migrate-java, rewrite-hibernate,
+# rewrite-xml); this file only supplies the project-specific configuration those
+# recipes need.
+####################################################################################
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.de.kiga3000.AddJUnitJupiterDependency
+displayName: Add the JUnit Jupiter dependency
+description: >-
+  org.openrewrite.java.testing.junit5.JUnit4to5Migration removes junit:junit but
+  does not add a Jupiter dependency to a project that never had JUnit 5, so the
+  published AddDependency recipe supplies it. This has to run *before*
+  JUnit4to5Migration: AddDependency is a scanning recipe, so its onlyIfUsing marker
+  is evaluated against the pre-edit LST, where the marker is still
+  junit.framework.TestCase.
+recipeList:
+  - org.openrewrite.java.dependencies.AddDependency:
+      groupId: org.junit.jupiter
+      artifactId: junit-jupiter
+      version: 6.1.3
+      scope: test
+      onlyIfUsing: junit.framework.TestCase
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.de.kiga3000.MigrateDeprecatedAwtShow
+displayName: Replace deprecated java.awt Window/Dialog show() with setVisible(true)
+description: >-
+  java.awt.Window#show() and java.awt.Dialog#show() have been deprecated since
+  Java 1.5; the documented replacement is setVisible(true). Composed from the
+  published ChangeMethodName and AddLiteralMethodArgument recipes.
+recipeList:
+  - org.openrewrite.java.ChangeMethodName:
+      methodPattern: java.awt.Window show()
+      newMethodName: setVisible
+      matchOverrides: true
+  - org.openrewrite.java.AddLiteralMethodArgument:
+      methodPattern: java.awt.Window setVisible()
+      argumentIndex: 0
+      literal: true
+      primitiveType: boolean
+  - org.openrewrite.java.AddLiteralMethodArgument:
+      methodPattern: java.awt.Dialog setVisible()
+      argumentIndex: 0
+      literal: true
+      primitiveType: boolean
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.de.kiga3000.MigrateMySqlConnectorJ
+displayName: Migrate MySQL Connector/J 3.0.14 (2004) to mysql-connector-j 26.7.0
+description: >-
+  The vendored Connector/J 3.0.14 cannot authenticate against a current MySQL
+  server (it only speaks the pre-4.1 handshake). This swaps the GAV, the driver
+  class name and extends the JDBC URL so the application's 2006 date semantics
+  (the literal string "0000-00-00") keep working on a server whose sql_mode
+  contains NO_ZERO_DATE / NO_ZERO_IN_DATE.
+recipeList:
+  - org.openrewrite.java.dependencies.ChangeDependency:
+      oldGroupId: mysql
+      oldArtifactId: mysql-connector-java
+      newGroupId: com.mysql
+      newArtifactId: mysql-connector-j
+      newVersion: 26.7.0
+  - org.openrewrite.java.ReplaceStringLiteralValue:
+      oldLiteralValue: com.mysql.jdbc.Driver
+      newLiteralValue: com.mysql.cj.jdbc.Driver
+  - org.openrewrite.java.ReplaceStringLiteralValue:
+      oldLiteralValue: "jdbc:mysql://localhost/Kindergarten?prepStmtCacheSqlLimit=2048&cachePrepStmts=true&autoReconnect=true"
+      newLiteralValue: "jdbc:mysql://localhost/Kindergarten?prepStmtCacheSqlLimit=2048&cachePrepStmts=true&autoReconnect=true&zeroDateTimeBehavior=ROUND&sessionVariables=sql_mode='ALLOW_INVALID_DATES'"
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.de.kiga3000.AddOrmDependencies
+displayName: Add the ORM and connection-pool dependencies
+description: >-
+  Adds HikariCP and Hibernate's HikariCP connection provider, deliberately on older
+  rungs (HikariCP 5.1.0 rather than 7.x) so a later exercise has a real upgrade path.
+  Uses org.openrewrite.maven.AddDependency rather than
+  org.openrewrite.java.dependencies.AddDependency: the latter is a scanning recipe
+  gated on onlyIfUsing, and these types are not referenced by any source file yet -
+  the dependency has to exist before the code that uses it can be written.
+recipeList:
+  - org.openrewrite.maven.AddDependency:
+      groupId: com.zaxxer
+      artifactId: HikariCP
+      version: 5.1.0
+      scope: compile
+  - org.openrewrite.maven.AddDependency:
+      groupId: org.hibernate
+      artifactId: hibernate-hikaricp
+      version: 5.6.15.Final
+      scope: compile
+  - org.openrewrite.maven.AddDependency:
+      groupId: org.slf4j
+      artifactId: slf4j-jdk14
+      version: 1.7.36
+      scope: runtime
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.de.kiga3000.UpgradeToJava25
+displayName: Migrate KiGa 3000 from Java 21 to Java 25
+description: >-
+  org.openrewrite.java.migrate.UpgradeToJava25, minus the sub-recipes that do not
+  apply to this project. Everything listed here is a published recipe; the only
+  reason this composite exists is to leave out
+  org.openrewrite.java.migrate.io.ReplaceSystemOutWithIOPrint, which rewrites the 39
+  System.out/System.err calls in ConnectionPool and in the three console check
+  programs to java.lang.IO. That is a stylistic change to code the migration is not
+  otherwise touching - and the check programs' stdout is the acceptance evidence for
+  this migration - so it is deliberately out of scope. The Kotlin rungs of
+  UpgradeToJava25 (UpgradeKotlinForJava25, UpgradeBuildToJava24ForKotlin1x,
+  UpgradeBuildToJava25ForKotlin, CommentKotlinModulesCappedAtJava24) and
+  MigrateGraalVMResourceConfig are omitted because there is no Kotlin source and no
+  GraalVM configuration.
+recipeList:
+  - org.openrewrite.java.migrate.UpgradeToJava21
+  - org.openrewrite.java.migrate.UpgradeBuildToJava25
+  - org.openrewrite.java.migrate.UpgradePluginsForJava25
+  - org.openrewrite.java.migrate.lang.MigrateProcessWaitForDuration
+  - org.openrewrite.java.migrate.util.MigrateInflaterDeflaterToClose
+  - org.openrewrite.java.migrate.util.MigrateStringReaderToReaderOf
+  - org.openrewrite.java.migrate.AccessController
+  - org.openrewrite.java.migrate.RemoveSecurityPolicy
+  - org.openrewrite.java.migrate.RemoveSecurityManager
+  - org.openrewrite.java.migrate.SystemGetSecurityManagerToNull
+  - org.openrewrite.java.migrate.MigrateZipErrorToZipException
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.de.kiga3000.MigratePersistenceStack
+displayName: Migrate the persistence stack to Hibernate 7.4 / Jakarta
+description: >-
+  Round 2 of the modernization: Hibernate 5.6 -> 7.4, javax.persistence ->
+  jakarta.persistence, javax.validation -> jakarta.validation with Hibernate
+  Validator 9.1, and the surrounding runtime bumps (HikariCP, SLF4J, the Expression
+  Language implementation).
+
+  The published Hibernate composites climb one minor at a time and each rung ends in
+  an `UpgradeDependencyVersion` with a `<minor>.x` selector, so the chain lands on the
+  newest 7.1.x rather than on a pinned version. The explicit pins that follow lift the
+  result to the exact target coordinates; `UpgradeDependencyVersion` only ever moves
+  versions forward, so the earlier rungs cannot undo them on a later cycle.
+
+  MigrateToHibernate71 pulls in JavaxPersistenceToJakartaPersistence (which also
+  rewrites persistence.xml) and MigrateDialect. MigrateDialect is a set of
+  `ChangeType` recipes, so it renames MySQL8Dialect only where it appears as a Java
+  type - the dialect in persistence.xml is a string in an XML attribute and is
+  handled by MigratePersistenceXmlToJakarta32 below, to the same target
+  (org.hibernate.dialect.MySQLDialect) the recipe prescribes.
+recipeList:
+  # 1. Hibernate 5.6 -> 7.1.x, including the javax.persistence -> jakarta.persistence
+  #    namespace move and the generic-dialect rename.
+  - org.openrewrite.hibernate.MigrateToHibernate71
+  # 2. Bean Validation: javax.validation -> jakarta.validation, Hibernate Validator
+  #    6.2 -> 9.1.x. The namespace move has to happen in the same invocation as the
+  #    version bump: the current jakarta.validation:jakarta.validation-api:2.0.2 still
+  #    declares the javax.validation packages, so bumping that same groupId:artifactId
+  #    on its own would delete the packages the sources still import.
+  - org.openrewrite.java.migrate.jakarta.JavaxValidationMigrationToJakartaValidation
+  - org.openrewrite.hibernate.validator.HibernateValidator_9_1
+  # 3. Pin the exact target versions.
+  - org.openrewrite.java.dependencies.UpgradeDependencyVersion:
+      groupId: org.hibernate.orm
+      artifactId: '*'
+      newVersion: 7.4.6.Final
+  - org.openrewrite.java.dependencies.UpgradeDependencyVersion:
+      groupId: jakarta.persistence
+      artifactId: jakarta.persistence-api
+      newVersion: 3.2.0
+  - org.openrewrite.java.dependencies.UpgradeDependencyVersion:
+      groupId: jakarta.validation
+      artifactId: jakarta.validation-api
+      newVersion: 3.1.1
+  - org.openrewrite.java.dependencies.UpgradeDependencyVersion:
+      groupId: org.hibernate.validator
+      artifactId: hibernate-validator
+      newVersion: 9.1.3.Final
+  # 4. Connection pool and logging facade.
+  - org.openrewrite.java.dependencies.UpgradeDependencyVersion:
+      groupId: com.zaxxer
+      artifactId: HikariCP
+      newVersion: 7.1.0
+  - org.openrewrite.java.dependencies.UpgradeDependencyVersion:
+      groupId: org.slf4j
+      artifactId: slf4j-jdk14
+      newVersion: 2.0.18
+  # 5. Expression Language. Hibernate Validator 9.x needs Jakarta EL 6, whose
+  #    reference implementation moved out of org.glassfish:jakarta.el into
+  #    org.glassfish.expressly:expressly. No published recipe covers that swap, so it
+  #    is expressed with the published ChangeDependency recipe.
+  - org.openrewrite.java.dependencies.ChangeDependency:
+      oldGroupId: org.glassfish
+      oldArtifactId: jakarta.el
+      newGroupId: org.glassfish.expressly
+      newArtifactId: expressly
+      newVersion: 6.0.0
+  # 6. persistence.xml: finish what JavaxPersistenceXmlToJakartaPersistenceXml starts
+  #    (it targets the 3.0 schema) and rename the dialect.
+  - org.de.kiga3000.MigratePersistenceXmlToJakarta32
+---
+type: specs.openrewrite.org/v1beta/recipe
+name: org.de.kiga3000.MigratePersistenceXmlToJakarta32
+displayName: Move persistence.xml to the Jakarta Persistence 3.2 schema and the generic MySQL dialect
+description: >-
+  org.openrewrite.java.migrate.jakarta.JavaxPersistenceXmlToJakartaPersistenceXml
+  rewrites the persistence.xml namespace and the javax.persistence.* property names,
+  but it stops at the Jakarta Persistence 3.0 schema and knows nothing about the
+  hibernate.dialect property. This lifts the descriptor to 3.2 - the version of
+  jakarta.persistence-api this project now depends on - and applies the same dialect
+  rename that org.openrewrite.hibernate.MigrateDialect applies to Java sources:
+  version-specific dialects were deprecated in Hibernate 6.0 and removed in 6.2, so
+  org.hibernate.dialect.MySQL8Dialect becomes org.hibernate.dialect.MySQLDialect.
+  Both steps use the published org.openrewrite.xml.ChangeTagAttribute recipe.
+preconditions:
+  - org.openrewrite.FindSourceFiles:
+      filePattern: '**/persistence.xml'
+recipeList:
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: persistence
+      attributeName: version
+      oldValue: '3.0'
+      newValue: '3.2'
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: persistence
+      attributeName: xsi:schemaLocation
+      oldValue: https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_0.xsd
+      newValue: https://jakarta.ee/xml/ns/persistence https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd
+  - org.openrewrite.xml.ChangeTagAttribute:
+      elementName: //property
+      attributeName: value
+      oldValue: org.hibernate.dialect.MySQL8Dialect
+      newValue: org.hibernate.dialect.MySQLDialect

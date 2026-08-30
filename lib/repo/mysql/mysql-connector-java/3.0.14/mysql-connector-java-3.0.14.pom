@@ -1,0 +1,4 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"><modelVersion>4.0.0</modelVersion>
+  <groupId>mysql</groupId><artifactId>mysql-connector-java</artifactId><version>3.0.14</version><packaging>jar</packaging>
+  <description>Vendored from the KiGa 3000 CVS repository (2006 snapshot). Not from Maven Central.</description>
+</project>

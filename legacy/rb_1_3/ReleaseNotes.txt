@@ -1,0 +1,75 @@
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Release Notes for Kiga3000
+Kiga3000 v.1.1 on 11/30/2005
+
+Copyright 2004 - 2005 Kiga3000
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This file contains important information about 
+known issues, and other information as appropriate.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+DISCLAIMER
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This Readme is provided as a convenience for our customers and partners,
+and is subject to, and is not intended to supplement, modify or extend,
+any Kig3000 confidentiality, distributor, and/or End User or other
+software license agreements between Kiga3000 and the customer or
+channel partner. Terms and conditions are subject to change. Kiga3000
+is not responsible for errors and omissions in this document for any
+reason whatsoever.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Content
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+I.  What's Different in this release
+II. Known issues
+III.  Deploying this Release
+IV.   Contacting KiGa3000
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+II. What's Different in this release
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This release implementedt the new features :
+- Configable log reporting
+- Internationalization
+- English translation
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+III. Known issues
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+- Chinese translation
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+IV. Deploying This Release
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are two files in this release:
+
+- KiGa3000-1.1.2-src.zip 
+The first is the source archive, interesting only to developers.
+
+- KiGa3000-1.1.2.zip
+
+The second is the full release.  This contains all
+you need to run Kiga3000 aside from the MySQL database itself and
+the Java VM.  Most people will have success with this simply
+downloading and following the steps in the INSTALL.txt file
+within the archive.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+V. Contacting KiGa3000
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Please submit all support requests and bug reports on our project
+page at http://sourceforge.net/projects/kiga3000/
+
+(c) 2004-2005 Kiga3000
+~~~~~~~~~~~~
+END OF FILE
+~~~~~~~~~~~~

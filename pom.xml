@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>org.de.kiga3000</groupId>
+  <artifactId>kiga3000</artifactId>
+  <version>1.3.0-legacy</version>
+  <packaging>jar</packaging>
+
+  <name>KiGa 3000</name>
+  <description>
+    Kindergarten card-index management (German Kindergarten "Karteikarte").
+    Based on the RB_1_3 CVS branch as of 2006-02-19, wrapped in a Maven build and
+    modernized from Java 8 to Java 21 with OpenRewrite (see rewrite.yml).
+  </description>
+  <url>https://sourceforge.net/projects/kiga3000/</url>
+
+  <licenses>
+    <license>
+      <name>GNU General Public License, version 2</name>
+      <url>https://www.gnu.org/licenses/old-licenses/gpl-2.0.html</url>
+    </license>
+  </licenses>
+
+  <properties>
+    <!-- Modernized language level. The original code targeted 1.4 and the Maven
+         baseline built at 1.8; both were raised to 21 by
+         org.openrewrite.java.migrate.UpgradeToJava21 and then to 25 by
+         org.openrewrite.java.migrate.UpgradeJavaVersion, via
+         org.de.kiga3000.UpgradeToJava25 in rewrite.yml. -->
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.target>25</maven.compiler.target>
+    <!-- German source files predate UTF-8 as a default. -->
+    <project.build.sourceEncoding>ISO-8859-1</project.build.sourceEncoding>
+  </properties>
+
+  <repositories>
+    <!-- Liquid Look and Feel is not on Maven Central. It is vendored as loose
+         .class files inside the original CVS repository and was jarred verbatim
+         into this project-local repository. -->
+    <repository>
+      <id>kiga3000-vendored</id>
+      <name>Dependencies recovered from the KiGa 3000 CVS tree</name>
+      <url>file://${project.basedir}/lib/repo</url>
+      <releases><enabled>true</enabled></releases>
+      <snapshots><enabled>false</enabled></snapshots>
+    </repository>
+  </repositories>
+
+  <dependencies>
+    <!-- Liquid Look and Feel 0.2.8 (2004). The app refuses to start without it. -->
+    <dependency>
+      <groupId>com.birosoft</groupId>
+      <artifactId>liquidlnf</artifactId>
+      <version>0.2.8</version>
+    </dependency>
+
+    <!-- MySQL Connector/J. Was the vendored 3.0.14-production (2004) with driver
+         com.mysql.jdbc.Driver, which cannot authenticate against a current server;
+         now the released driver, com.mysql.cj.jdbc.Driver. -->
+    <dependency>
+      <groupId>com.mysql</groupId>
+      <artifactId>mysql-connector-j</artifactId>
+      <version>26.7.0</version>
+    </dependency>
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+      <version>7.1.0</version>
+    </dependency>
+
+    <!-- JUnit 5: the tests were migrated off junit.framework.TestCase (JUnit 3). -->
+
+    <!--
+      ORM. Was Hibernate 5.6.15.Final with the javax.persistence namespace; raised to
+      7.4.6.Final by rewrite-hibernate's MigrateToHibernate60..71 chain, which also
+      moves the group ID from org.hibernate to org.hibernate.orm and pulls in
+      rewrite-migrate-java's javax.persistence -> jakarta.persistence namespace move.
+
+      The API jar still arrives transitively, as it did before: hibernate-core 7.4
+      depends on jakarta.persistence:jakarta.persistence-api 3.2.0, which is the
+      version this project's mapping is written against.
+    -->
+    <dependency>
+      <groupId>org.hibernate.orm</groupId>
+      <artifactId>hibernate-core</artifactId>
+      <version>7.4.6.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate.orm</groupId>
+      <artifactId>hibernate-hikaricp</artifactId>
+      <version>7.4.6.Final</version>
+    </dependency>
+
+    <!--
+      Bean Validation. Was javax.validation 2.0 with Hibernate Validator 6.2.5.Final;
+      org.openrewrite.hibernate.validator.HibernateValidator_9_1 took the validator to
+      9.1.3.Final and rewrite-migrate-java's
+      JavaxValidationMigrationToJakartaValidation took the namespace to
+      jakarta.validation, whose API (jakarta.validation-api 3.1.1) arrives transitively
+      with the validator.
+
+      This is not decoration. The field-length rules were previously scattered through
+      SQLHelfer.pruefeDaten, which checked `gesundheit` and `sonstiges` but NOT
+      `sorgeperson` - so an over-long caregiver field reached MySQL and came back as a
+      raw "Data truncation: Data too long for column" dialog. Declaring @Size on the
+      entity puts every column limit in one place, next to the column it constrains.
+    -->
+    <dependency>
+      <groupId>org.hibernate.validator</groupId>
+      <artifactId>hibernate-validator</artifactId>
+      <version>9.1.3.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-jdk14</artifactId>
+      <version>2.0.18</version>
+      <scope>runtime</scope>
+    </dependency>
+    <!-- Expression Language, needed by Hibernate Validator to interpolate messages.
+         Hibernate Validator 9.x requires Jakarta EL 6, whose reference implementation
+         left org.glassfish:jakarta.el for org.glassfish.expressly:expressly. -->
+    <dependency>
+      <groupId>org.glassfish.expressly</groupId>
+      <artifactId>expressly</artifactId>
+      <version>6.0.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>6.1.3</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>Kiga3000</finalName>
+    <plugins>
+      <!-- OpenRewrite drives the Java 8 -> Java 21 modernization. -->
+      <plugin>
+        <groupId>org.openrewrite.maven</groupId>
+        <artifactId>rewrite-maven-plugin</artifactId>
+        <version>6.46.1</version>
+        <configuration>
+          <exportDatatables>false</exportDatatables>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.openrewrite.recipe</groupId>
+            <artifactId>rewrite-migrate-java</artifactId>
+            <version>3.42.0</version>
+          </dependency>
+          <dependency>
+            <groupId>org.openrewrite.recipe</groupId>
+            <artifactId>rewrite-static-analysis</artifactId>
+            <version>2.41.0</version>
+          </dependency>
+          <dependency>
+            <groupId>org.openrewrite.recipe</groupId>
+            <artifactId>rewrite-testing-frameworks</artifactId>
+            <version>3.44.0</version>
+          </dependency>
+          <dependency>
+            <groupId>org.openrewrite.recipe</groupId>
+            <artifactId>rewrite-java-dependencies</artifactId>
+            <version>1.60.2</version>
+          </dependency>
+          <dependency>
+            <groupId>org.openrewrite.recipe</groupId>
+            <artifactId>rewrite-hibernate</artifactId>
+            <version>2.25.0</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.15.0</version>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.6</version>
+        <configuration>
+          <!-- KigaCardNewTest is not a unit test: it opens a Swing window, needs a
+               live MySQL connection and calls System.exit(1) on failure, which would
+               kill the forked JVM. It is kept as source (it must still compile) but
+               is not executed. -->
+          <excludes>
+            <exclude>**/KigaCardNewTest.java</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.2</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>KiGa3000Main</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+
+      <!--
+        Package everything into one runnable jar, so the application starts with
+        `java -jar target/Kiga3000.jar` from any directory.
+
+        Before this, starting it meant assembling a classpath by hand: the Liquid
+        Look-and-Feel and the MySQL driver both had to be on it, and because the
+        title page and logging configuration were loaded from filesystem paths built
+        out of an empty config key, the working directory mattered too.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <createDependencyReducedPom>false</createDependencyReducedPom>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>KiGa3000Main</mainClass>
+                </transformer>
+                <!-- Connector/J registers its driver via META-INF/services; without
+                     this the entries from separate jars overwrite each other. -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <!-- Jar signatures do not survive repackaging; leaving them in
+                         makes the JVM reject the shaded jar. -->
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <exclude>module-info.class</exclude>
+                    <exclude>META-INF/versions/**/module-info.class</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
