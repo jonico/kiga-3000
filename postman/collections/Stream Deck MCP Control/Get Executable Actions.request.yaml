@@ -1,0 +1,29 @@
+$kind: mcp-request
+name: Get Executable Actions
+description: |-
+  Get all currently configured Stream Deck buttons that can be executed.
+  
+  This returns the actual buttons you have set up on your Stream Deck device,
+  including their IDs, titles, and plugin information.
+  
+  **Use Cases:**
+  - See what buttons are currently configured
+  - Get action IDs for execution
+  - Verify button configuration
+  
+  **Response includes:**
+  - Action UUIDs (for execution)
+  - Button titles
+  - Plugin information
+  - Action descriptions
+order: 4000
+transport: stdio
+command: npx --yes @elgato/mcp-server@latest
+message: |-
+  {
+    "method": "tools/call",
+    "params": {
+      "name": "streamdeck__get_executable_actions",
+      "arguments": {}
+    }
+  }

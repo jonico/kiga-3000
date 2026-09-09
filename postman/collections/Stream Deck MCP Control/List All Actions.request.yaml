@@ -1,0 +1,29 @@
+$kind: mcp-request
+name: List All Actions
+description: |-
+  Get all available Stream Deck actions from all installed plugins.
+  
+  This returns the complete catalog of actions that can be used with Stream Deck,
+  including both AI-ready and non-AI-ready actions.
+  
+  **Use Cases:**
+  - Discover available plugins and their actions
+  - Find action IDs for configuration
+  - Browse all Stream Deck capabilities
+  
+  **Response includes:**
+  - Action IDs
+  - Plugin information
+  - Action names and descriptions
+  - AI-ready status
+order: 2000
+transport: stdio
+command: npx --yes @elgato/mcp-server@latest
+message: |-
+  {
+    "method": "tools/call",
+    "params": {
+      "name": "streamdeck__list_actions",
+      "arguments": {}
+    }
+  }

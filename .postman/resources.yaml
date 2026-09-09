@@ -3,3 +3,7 @@ workspace:
 cloudResources:
   collections:
     ../postman/collections/KiGa 3000: 50602431-eb9c82a4-a696-469f-ba0d-a56fc83a315b
+    ../postman/collections/Card Validation from MySQL: 50602431-6dc8ebc8-dd85-4ee5-8066-57e83732b740
+    ../postman/collections/Stream Deck MCP Control: 6aa174bb530359ffe176a394
+  datasets:
+    ../postman/datasets/Cards-MySQL-Database/Cards-MySQL-Database.dataset.yaml: fe7a53b2-3ba1-492a-a819-d7df1d00ebe0

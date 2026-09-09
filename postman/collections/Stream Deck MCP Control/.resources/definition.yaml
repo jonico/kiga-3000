@@ -1,0 +1,27 @@
+$kind: collection
+name: Stream Deck MCP Control
+description: |-
+  Comprehensive collection for interacting with the Stream Deck MCP server.
+  
+  This collection provides MCP requests to control Stream Deck actions, check bridge status, and execute configured buttons.
+  
+  **Available Actions:**
+  - Bridge Status: Check Stream Deck connection
+  - List Actions: Get all available Stream Deck actions
+  - Execute Actions: Trigger configured Stream Deck buttons
+  - AI Request: Use AI to automatically find and execute actions
+  
+  **Variables:**
+  - sleep_action_id: ID for the Mac sleep button
+  - text_action_id: ID for the DB/REST Test text button
+  - mcp_server_name: Name of the MCP server
+variables:
+  - key: sleep_action_id
+    value: 08f58e7f-259d-4162-904a-a54546dc38fb
+    description: Action ID for Mac sleep button
+  - key: text_action_id
+    value: 826e7d02-ef91-4578-8b20-72f22f9e144f
+    description: Action ID for DB/REST Test text button
+  - key: mcp_server_name
+    value: MCP Server@latest
+    description: Name of the Stream Deck MCP server
