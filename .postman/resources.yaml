@@ -1,0 +1,5 @@
+workspace:
+  id: 85b4d006-0c62-47c2-aa67-fb5c53654c9e
+cloudResources:
+  collections:
+    ../postman/collections/KiGa 3000: 50602431-eb9c82a4-a696-469f-ba0d-a56fc83a315b

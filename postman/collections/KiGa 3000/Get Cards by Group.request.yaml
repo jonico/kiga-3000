@@ -1,0 +1,48 @@
+$kind: http-request
+name: Get Cards by Group
+description: |
+  Example request for /api/groups/{gruppe}/cards.
+  The group path segment must be numeric; invalid numeric values outside 0..255
+  return 404.
+url: http://127.0.0.1:8080/api/groups/2/cards
+method: GET
+order: 40
+scripts:
+  - type: afterResponse
+    code: |-
+      const response = pm.response.json();
+      
+      const template = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: var(--spacing-l); color: var(--content-color-primary);">
+        <h1 style="color: var(--content-color-primary); margin-bottom: var(--spacing-l);">Cards in Group</h1>
+        <p style="margin-bottom: var(--spacing-l);">Total cards: {{length}}</p>
+        <table style="width: 100%; border-collapse: collapse; background: var(--background-color-secondary); border-radius: 8px; overflow: hidden;">
+          <thead>
+            <tr style="background: var(--background-color-tertiary);">
+              <th style="padding: var(--spacing-m); text-align: left; border-bottom: 1px solid var(--border-color-default);">ID</th>
+              <th style="padding: var(--spacing-m); text-align: left; border-bottom: 1px solid var(--border-color-default);">First Name</th>
+              <th style="padding: var(--spacing-m); text-align: left; border-bottom: 1px solid var(--border-color-default);">Last Name</th>
+              <th style="padding: var(--spacing-m); text-align: left; border-bottom: 1px solid var(--border-color-default);">Group</th>
+              <th style="padding: var(--spacing-m); text-align: left; border-bottom: 1px solid var(--border-color-default);">Birth Date</th>
+            </tr>
+          </thead>
+          <tbody>
+            {{#each this}}
+            <tr>
+              <td style="padding: var(--spacing-m); border-bottom: 1px solid var(--border-color-default);">{{id}}</td>
+              <td style="padding: var(--spacing-m); border-bottom: 1px solid var(--border-color-default);">{{vorname}}</td>
+              <td style="padding: var(--spacing-m); border-bottom: 1px solid var(--border-color-default);">{{nachname}}</td>
+              <td style="padding: var(--spacing-m); border-bottom: 1px solid var(--border-color-default);">{{gruppe}}</td>
+              <td style="padding: var(--spacing-m); border-bottom: 1px solid var(--border-color-default);">{{geburtsdatum}}</td>
+            </tr>
+            {{/each}}
+          </tbody>
+        </table>
+      </div>
+      `;
+      
+      pm.visualizer.set(template, {
+        length: response.length,
+        ...response
+      });
+    language: text/javascript

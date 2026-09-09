@@ -1,0 +1,39 @@
+$kind: http-request
+name: Writes Are Rejected
+description: |
+  The API is read-only. Non-GET methods return 405 and advertise Allow: GET.
+url: http://127.0.0.1:8080/api/cards
+method: POST
+order: 60
+scripts:
+  - type: afterResponse
+    code: |-
+      const statusCode = pm.response.code;
+      const statusText = pm.response.status;
+      const allowHeader = pm.response.headers.get('Allow') || 'Not specified';
+      
+      const template = `
+      <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: var(--spacing-l); color: var(--content-color-primary);">
+        <h1 style="color: var(--content-color-primary); margin-bottom: var(--spacing-l);">Method Not Allowed</h1>
+        <div style="background: var(--background-color-secondary); padding: var(--spacing-l); border-radius: 8px;">
+          <div style="text-align: center; margin-bottom: var(--spacing-l);">
+            <div style="font-size: 48px; margin-bottom: var(--spacing-m);">🚫</div>
+            <div style="font-size: 32px; font-weight: bold; color: var(--content-color-error);">{{statusCode}}</div>
+            <div style="font-size: 18px; margin-top: var(--spacing-s);">{{statusText}}</div>
+          </div>
+          <div style="margin-top: var(--spacing-l); padding: var(--spacing-m); background: var(--background-color-tertiary); border-radius: 4px;">
+            <strong>Allowed Methods:</strong> {{allowHeader}}
+          </div>
+          <div style="margin-top: var(--spacing-m); padding: var(--spacing-m); background: var(--background-color-info); border-radius: 4px;">
+            <strong>Note:</strong> This API is read-only. Only GET requests are supported.
+          </div>
+        </div>
+      </div>
+      `;
+      
+      pm.visualizer.set(template, {
+        statusCode: statusCode,
+        statusText: statusText,
+        allowHeader: allowHeader
+      });
+    language: text/javascript
