@@ -1,24 +1,22 @@
 $kind: mcp-request
-name: Invoke Plugin Method
 description: |-
   Invoke a specific method on a Stream Deck plugin action.
-  
+
   This is an advanced request that allows calling plugin-specific methods
   with custom parameters.
-  
+
   **Parameters:**
   - action_uuid: The UUID of the action
   - method: The method name to invoke
   - parameters: JSON object with method-specific parameters
-  
+
   **Example Use Cases:**
   - Call custom plugin methods
   - Advanced plugin automation
   - Plugin-specific operations
-  
+
   **Note:** This is a template. Update the method and parameters based on
   the specific plugin and action you want to control.
-order: 8000
 transport: stdio
 command: npx --yes @elgato/mcp-server@latest
 message: |-
@@ -33,3 +31,4 @@ message: |-
       }
     }
   }
+order: 8000

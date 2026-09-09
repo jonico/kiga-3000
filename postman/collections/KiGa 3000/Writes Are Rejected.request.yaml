@@ -1,17 +1,15 @@
 $kind: http-request
-name: Writes Are Rejected
 description: |
   The API is read-only. Non-GET methods return 405 and advertise Allow: GET.
 url: http://127.0.0.1:8080/api/cards
 method: POST
-order: 60
 scripts:
   - type: afterResponse
     code: |-
       const statusCode = pm.response.code;
       const statusText = pm.response.status;
       const allowHeader = pm.response.headers.get('Allow') || 'Not specified';
-      
+
       const template = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: var(--spacing-l); color: var(--content-color-primary);">
         <h1 style="color: var(--content-color-primary); margin-bottom: var(--spacing-l);">Method Not Allowed</h1>
@@ -30,10 +28,11 @@ scripts:
         </div>
       </div>
       `;
-      
+
       pm.visualizer.set(template, {
         statusCode: statusCode,
         statusText: statusText,
         allowHeader: allowHeader
       });
     language: text/javascript
+order: 6000

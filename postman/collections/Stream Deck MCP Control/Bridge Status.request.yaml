@@ -1,15 +1,13 @@
 $kind: mcp-request
-name: Bridge Status
 description: |-
   Check the Stream Deck bridge connection status.
-  
+
   This request verifies that the MCP server can communicate with the Stream Deck software.
   Use this to troubleshoot connection issues or verify the Stream Deck is running.
-  
+
   **Expected Response:**
   - connected: true/false
   - version: Stream Deck software version
-order: 1000
 transport: stdio
 command: npx --yes @elgato/mcp-server@latest
 message: |-
@@ -20,3 +18,4 @@ message: |-
       "arguments": {}
     }
   }
+order: 1000

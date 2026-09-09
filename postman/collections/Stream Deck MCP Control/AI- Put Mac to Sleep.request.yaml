@@ -18,19 +18,18 @@ description: |-
   Stream Deck operations.
 
   **Warning:** This will put your Mac to sleep when executed!
-clientTools: []
-order: 9000
 url: https://api.openai.com/v1/chat/completions
 config:
   model: gpt-4o
   provider: openai
+settings:
+  streamResponse: true
 userPrompts:
   - id: 5cb388ed-9f27-468a-a52b-9d9e08920b1f
     value: Put my Mac to sleep using the Stream Deck
     timestamp: 1788965847973
     active: true
     contentType: text
-systemPrompts: []
 mcpConfig: |-
   [
     {
@@ -53,5 +52,4 @@ auth:
   type: bearer
   credentials:
     token: "{{vault:OPEN_AI_KEY}}"
-settings:
-  streamResponse: true
+order: 9000

@@ -1,18 +1,20 @@
+data_dir: .resources
 type: dataset
 name: Cards MySQL Database
 id: fe7a53b2-3ba1-492a-a819-d7df1d00ebe0
-data_dir: .resources
 description: MySQL data source for KiGa 3000 cards database containing child card information from the Karteikarte table
+ingest: false
 sources:
   - from: embedded_datasource
     datasource:
       name: Karteikarte
       id: afa6374c-bcfa-4834-8622-eda29e180990
+      dsKey: Karteikarte
       format: mysql
       source_type: dynamic
       location:
         type: mysql
-        value: "KiGa:Kiga3000@tcp(localhost:3306)/Kindergarten"
+        value: KiGa:Kiga3000@tcp(localhost:3306)/Kindergarten
         table: Karteikarte
       slug: Karteikarte
 views:
@@ -20,5 +22,9 @@ views:
     view:
       name: Karteikarte_default_view
       id: 399d7478-3bcc-4a42-a9cc-f3697b7cbab6
-      query: |-
-        SELECT id, kindvorname as vorname, kindnachname as nachname, gruppe FROM Karteikarte ORDER BY id
+      query: SELECT id, kindvorname as vorname, kindnachname as nachname, gruppe FROM Karteikarte ORDER BY id
+  - from: embedded_view
+    view:
+      name: Karteikarte_default_view_all
+      id: e6ddafec-cf79-4549-a816-789a8dd50860
+      query: SELECT id, kindvorname as vorname, kindnachname as nachname, gruppe, * FROM Karteikarte ORDER BY id

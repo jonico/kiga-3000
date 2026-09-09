@@ -1,16 +1,24 @@
 $kind: collection
-name: Card Validation from MySQL
 description: |-
   Collection for validating cards from MySQL database against the REST API.
-  
+
+  Created by the following prompt:
+
+  ```
+  Analyze the KiGa 3000 backend to extract database credentials, create a MySQL data source for the cards table, generate a validation collection that cross-references every database record against the REST API, and execute a full synchronization audit.
+
+   ```
+
   This collection uses a MySQL data source to iterate through all cards and validate each one exists in the API with matching data.
-  
+
   Setup Instructions:
+
   1. Create a MySQL dataset named "Cards MySQL Database" with your database connection details
+      
   2. Configure the dataset as the data source for this collection run
+      
   3. Map the card ID from the dataset to the request
+      
   4. Run the collection to validate all cards
 variables:
-  - key: base_url
-    value: 'http://127.0.0.1:8080'
-    description: Base URL for the KiGa 3000 API
+  base_url: http://127.0.0.1:8080

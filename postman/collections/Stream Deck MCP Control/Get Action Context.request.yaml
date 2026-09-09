@@ -1,23 +1,21 @@
 $kind: mcp-request
-name: Get Action Context
 description: |-
   Get detailed context information for a specific Stream Deck action.
-  
+
   This retrieves the current state, settings, and context of a configured action.
   Useful for debugging or understanding action configuration.
-  
+
   **Parameter:**
   - action_uuid: The UUID of the action to query
-  
+
   **Default:** Uses sleep_action_id variable
-  
+
   **Use Cases:**
   - Debug action configuration
   - Inspect action state
   - Verify action settings
-  
+
   **Tip:** Change the action_uuid in the request body to query different actions
-order: 7000
 transport: stdio
 command: npx --yes @elgato/mcp-server@latest
 message: |-
@@ -30,3 +28,4 @@ message: |-
       }
     }
   }
+order: 7000

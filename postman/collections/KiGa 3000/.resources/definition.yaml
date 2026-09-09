@@ -1,3 +1,2 @@
 $kind: collection
-name: KiGa 3000
 description: "Read-only KiGa 3000 backend API. GET endpoints: /api/health, /api/cards, /api/cards/{id}, /api/groups/{gruppe}/cards. Non-GET returns 405 with Allow: GET."

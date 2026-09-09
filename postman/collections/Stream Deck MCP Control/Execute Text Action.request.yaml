@@ -1,21 +1,19 @@
 $kind: mcp-request
-name: Execute Text Action
 description: |-
   Execute the DB/REST Test text button on Stream Deck.
-  
+
   This triggers the configured text action button.
   Uses the text_action_id collection variable.
-  
+
   **Action Details:**
   - Plugin: com.elgato.streamdeck.system.text
   - Title: DB / REST Test
   - ID: {{text_action_id}}
-  
+
   **Use Cases:**
   - Test text button execution
   - Trigger text-based Stream Deck actions
   - Automate text button presses
-order: 6000
 transport: stdio
 command: npx --yes @elgato/mcp-server@latest
 message: |-
@@ -28,3 +26,4 @@ message: |-
       }
     }
   }
+order: 6000

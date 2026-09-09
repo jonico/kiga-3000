@@ -1,18 +1,16 @@
 $kind: mcp-request
-name: Execute Sleep Action
 description: |-
   Execute the Mac sleep button on Stream Deck.
-  
+
   This triggers the configured sleep action, putting your Mac to sleep.
   Uses the sleep_action_id collection variable.
-  
+
   **Action Details:**
   - Plugin: com.kuberstar.mac-control
   - Function: Put the Mac to sleep
   - ID: {{sleep_action_id}}
-  
+
   **Warning:** This will immediately put your Mac to sleep!
-order: 5000
 transport: stdio
 command: npx --yes @elgato/mcp-server@latest
 message: |-
@@ -25,3 +23,4 @@ message: |-
       }
     }
   }
+order: 5000
