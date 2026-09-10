@@ -3,18 +3,12 @@ id: ac9f28c1-fac5-41a4-8d1b-419e9761f3ca
 name: KiGa 3000 API Mock (MySQL-backed)
 slug: kiga-3000-api-mock-mysql
 protocol: http
-# 4011 so this can run alongside the fixture mock on 4010.
 port: 4011
 scenarios:
-  # Answers from the live Kindergarten database via the Cards MySQL Database dataset.
-  # Needs the seeded MySQL reachable and a Postman session, since the engine refuses to
-  # read a dynamic mysql source unauthenticated. Default because serving real database
-  # rows is the whole point of this mock.
   - name: mysql
     path: ./mysql.js
     default: true
-  # Exactly as emitted by `postman mock generate` from the OpenAPI spec: one canned
-  # example per response. Kept so --update can refresh it, and as the offline fallback
-  # when there is no database to talk to.
+    id: 01a08c3f-d287-715a-a69a-50172b50aed1
   - name: default
     path: ./default.js
+    id: 01a08c3f-d2ac-713d-b148-b41851650fa8
