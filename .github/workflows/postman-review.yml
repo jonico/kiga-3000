@@ -255,8 +255,10 @@ jobs:
           # --use-mock starts the mock, rewrites {{base_url}} onto it for the duration of
           # the run, and stops it afterwards, so there is no background process to manage.
           # It needs the manifest FILE; handing it the mock directory fails with EISDIR.
-          # The fixture scenario answers from the same cards.json the dataset reads, so
-          # the assertions compare the fixture against itself through the HTTP layer.
+          # The fixture scenario answers from the dataset itself via pm.datasets, so the
+          # mock and the iteration data are the same rows read through the same engine.
+          # That is also why the mock cannot be started separately with `postman mock
+          # run`: pm.datasets only resolves inside a run that has the dataset loaded.
           postman collection run "${COLLECTION}" \
             --iteration-data-dataset "postman/datasets/Cards-Mock-Fixture/Cards-Mock-Fixture.dataset.yaml" \
             --iteration-data-view "Karteikarte_default_view" \
