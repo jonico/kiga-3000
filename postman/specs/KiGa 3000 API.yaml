@@ -86,16 +86,16 @@ paths:
               example:
                 - id: 1
                   gruppe: 1
-                  vorname: Johannes
-                  nachname: Nicolai
-                  geburtsdatum: "16.02.1980"
-                  eintritt: "01.09.1983"
+                  vorname: Anna
+                  nachname: Musterkind
+                  geburtsdatum: "11.03.2020"
+                  eintritt: "01.09.2023"
                 - id: 2
                   gruppe: 1
-                  vorname: Jana
-                  nachname: Nicolai
-                  geburtsdatum: "20.11.1984"
-                  eintritt: "01.09.1987"
+                  vorname: Ben
+                  nachname: Beispiel
+                  geburtsdatum: "20.11.2020"
+                  eintritt: "01.09.2023"
         "500":
           $ref: "#/components/responses/InternalServerError"
     post:
@@ -125,12 +125,12 @@ paths:
               schema:
                 $ref: "#/components/schemas/CardSummary"
               example:
-                id: 2
-                gruppe: 1
-                vorname: Jana
-                nachname: Nicolai
-                geburtsdatum: "20.11.1984"
-                eintritt: "01.09.1987"
+                id: 12
+                gruppe: 2
+                vorname: Elias
+                nachname: Roßberg
+                geburtsdatum: "08.02.2019"
+                eintritt: "01.09.2022"
         "400":
           description: The `id` path segment is not an integer.
           content:
@@ -169,12 +169,12 @@ paths:
                 items:
                   $ref: "#/components/schemas/CardSummary"
               example:
-                - id: 5
-                  gruppe: 2
-                  vorname: Nigel
-                  nachname: Abbott
-                  geburtsdatum: "17.03.1981"
-                  eintritt: "01.09.1984"
+                - id: 16
+                  gruppe: 3
+                  vorname: Amelie
+                  nachname: Vogtländer
+                  geburtsdatum: "06.05.2018"
+                  eintritt: "01.09.2021"
         "400":
           description: The `gruppe` path segment is not an integer.
           content:
@@ -250,12 +250,12 @@ components:
           type: string
           nullable: true
           description: First name. May contain German umlauts. `null` if unset in the index.
-          example: Jana
+          example: Anna
         nachname:
           type: string
           nullable: true
           description: Last name. May contain German umlauts. `null` if unset in the index.
-          example: Nicolai
+          example: Musterkind
         geburtsdatum:
           type: string
           nullable: true
@@ -263,13 +263,13 @@ components:
           description: |
             Date of birth as German-formatted text, `dd.MM.yyyy`. Deliberately not an
             ISO `date`: the backend passes the stored string through unparsed.
-          example: "20.11.1984"
+          example: "11.03.2020"
         eintritt:
           type: string
           nullable: true
           pattern: '^\d{2}\.\d{2}\.\d{4}$'
           description: Date of entry into the Kindergarten, German-formatted text, `dd.MM.yyyy`.
-          example: "01.09.1987"
+          example: "01.09.2023"
 
     Health:
       type: object

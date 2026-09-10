@@ -35,7 +35,7 @@ const server = http.createServer((req, res) => {
 
     // "All card summaries. Empty array if the index holds no cards." — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":1,"gruppe":1,"vorname":"Johannes","nachname":"Nicolai","geburtsdatum":"16.02.1980","eintritt":"01.09.1983"},{"id":2,"gruppe":1,"vorname":"Jana","nachname":"Nicolai","geburtsdatum":"20.11.1984","eintritt":"01.09.1987"}]));
+    return res.end(JSON.stringify([{"id":1,"gruppe":1,"vorname":"Anna","nachname":"Musterkind","geburtsdatum":"11.03.2020","eintritt":"01.09.2023"},{"id":2,"gruppe":1,"vorname":"Ben","nachname":"Beispiel","geburtsdatum":"20.11.2020","eintritt":"01.09.2023"}]));
   }
 
   // @endpoint POST /api/cards
@@ -68,7 +68,7 @@ const server = http.createServer((req, res) => {
 
     // "The card summary." — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify({"id":2,"gruppe":1,"vorname":"Jana","nachname":"Nicolai","geburtsdatum":"20.11.1984","eintritt":"01.09.1987"}));
+    return res.end(JSON.stringify({"id":12,"gruppe":2,"vorname":"Elias","nachname":"Roßberg","geburtsdatum":"08.02.2019","eintritt":"01.09.2022"}));
   }
 
   // @endpoint GET /api/groups/:gruppe/cards
@@ -95,7 +95,7 @@ const server = http.createServer((req, res) => {
 
     // "Card summaries in the group. Empty array if the group exists in range but holds no cards." — default
     res.writeHead(200, {"Content-Type":"application/json"});
-    return res.end(JSON.stringify([{"id":5,"gruppe":2,"vorname":"Nigel","nachname":"Abbott","geburtsdatum":"17.03.1981","eintritt":"01.09.1984"}]));
+    return res.end(JSON.stringify([{"id":16,"gruppe":3,"vorname":"Amelie","nachname":"Vogtländer","geburtsdatum":"06.05.2018","eintritt":"01.09.2021"}]));
   }
 
   res.writeHead(404, { 'Content-Type': 'application/json' });
