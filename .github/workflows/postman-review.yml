@@ -16,7 +16,8 @@
 #
 #   mysql-dataset  Needs it. What requires a session is the remote SOURCE, not the
 #                  dataset: a dynamic mysql datasource fails with "Dataset source access
-#                  denied: Authentication required".
+#                  denied: Authentication required". That applies to its demo step too,
+#                  where the refusal happens inside the mock handler's pm.datasets call.
 #   spec-lint      Needs it for a subtler reason. Unauthenticated, `postman spec lint`
 #                  reports "No issues found" because it never fetches the governance
 #                  rules, so in CI a missing key reads as a pass rather than a skip.
@@ -214,6 +215,33 @@ jobs:
             --iteration-data-dataset "postman/datasets/Cards-MySQL-Database/Cards-MySQL-Database.dataset.yaml" \
             --iteration-data-view "Karteikarte_default_view" \
             --output reports \
+            --no-report-events
+
+      # ---------------------------------------------------------------- demo only
+      - name: Demo — serve the same collection from a MySQL-backed local mock
+        continue-on-error: true
+        run: |
+          # Not a gate, a demonstration, hence continue-on-error. It shows a local mock
+          # server answering from the live Kindergarten database instead of from canned
+          # examples: the handler queries the Cards MySQL Database dataset through
+          # pm.datasets, so the responses are built from whatever is in Karteikarte at
+          # the time of the run.
+          #
+          # Note what is NOT involved: the Java API. --use-mock points {{base_url}} at
+          # the mock, so the seeded database is the only live dependency. The assertions
+          # therefore compare MySQL against MySQL and cannot really fail - which is why
+          # this is for show and does not gate the build.
+          #
+          # It does need POSTMAN_API_KEY, and not only for the iteration data: the mock
+          # handler's own pm.datasets call is refused without a session. Verified by
+          # driving iterations from the offline JSON fixture while the mock still read
+          # MySQL - every request came back 500. Worth knowing because handler stderr is
+          # not forwarded under --use-mock, so that auth failure presents as a bare 500
+          # with no explanation anywhere in the run output.
+          postman collection run "${COLLECTION}" \
+            --iteration-data-dataset "postman/datasets/Cards-MySQL-Database/Cards-MySQL-Database.dataset.yaml" \
+            --iteration-data-view "Karteikarte_default_view" \
+            --use-mock "{{base_url}} mock:./postman/mocks/kiga-3000-api-mysql/config.yaml mysql" \
             --no-report-events
 
       - name: Stop the API
