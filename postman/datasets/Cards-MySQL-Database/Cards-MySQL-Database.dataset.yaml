@@ -28,3 +28,8 @@ views:
       name: Karteikarte_default_view_all
       id: e6ddafec-cf79-4549-a816-789a8dd50860
       query: SELECT id, kindvorname as vorname, kindnachname as nachname, gruppe, * FROM Karteikarte ORDER BY id
+  - from: embedded_view
+    view:
+      name: Karteikarte_one_id
+      id: d23d7c74-a2c1-47e6-9aa9-e7c5d6d65343
+      query: SELECT id FROM Karteikarte ORDER BY id LIMIT 1

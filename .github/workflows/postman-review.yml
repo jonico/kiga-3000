@@ -49,6 +49,7 @@ env:
   POSTMAN_CLI_VERSION: "1.56.1"
   SPEC: postman/specs/KiGa 3000 API.yaml
   COLLECTION: postman/collections/Card Validation from MySQL
+  CONTRACT: postman/collections/Card Lookup Contract
 
 jobs:
   # ---------------------------------------------------------------- advisory lint
@@ -217,30 +218,42 @@ jobs:
             --output reports \
             --no-report-events
 
-      # ---------------------------------------------------------------- demo only
-      - name: Demo — serve the same collection from a MySQL-backed local mock
-        continue-on-error: true
+      # ------------------------------------------------ mock fidelity, both sides
+      # The contract suite carries its own ids and uses no iteration data, so it says
+      # the same thing wherever it is pointed. Running it against the real API and then
+      # against the MySQL-backed mock is what makes the mock trustworthy: any divergence
+      # in status codes, error bodies or the exposed field set fails one leg and not the
+      # other.
+      #
+      # Both legs gate the build. An earlier version of this ran the data-driven
+      # collection against the mock with continue-on-error, which was worthless: with
+      # the mock and the iteration data reading the same dataset the assertions compared
+      # MySQL against MySQL, so the step could not fail for data reasons, and
+      # continue-on-error discarded the one signal it did carry.
+
+      - name: Contract suite against the real API
         run: |
-          # Not a gate, a demonstration, hence continue-on-error. It shows a local mock
-          # server answering from the live Kindergarten database instead of from canned
-          # examples: the handler queries the Cards MySQL Database dataset through
-          # pm.datasets, so the responses are built from whatever is in Karteikarte at
-          # the time of the run.
+          postman collection run "${CONTRACT}" --no-report-events
+
+      - name: Contract suite against the MySQL-backed mock — must match the real API
+        run: |
+          # --iteration-data-dataset is passed only to give the mock handler access to
+          # the database. The collection ignores iteration data entirely; the view
+          # returns a single id purely so the run is one iteration.
           #
-          # Note what is NOT involved: the Java API. --use-mock points {{base_url}} at
-          # the mock, so the seeded database is the only live dependency. The assertions
-          # therefore compare MySQL against MySQL and cannot really fail - which is why
-          # this is for show and does not gate the build.
+          # This is a workaround for SE1-297: pm.datasets inside a mock handler resolves
+          # only the dataset supplied as --iteration-data-dataset. --dataset does not
+          # reach the mock worker, so there is currently no way to give a mock database
+          # access without also handing it iteration data. Drop the two dataset flags
+          # once that is fixed.
           #
-          # It does need POSTMAN_API_KEY, and not only for the iteration data: the mock
-          # handler's own pm.datasets call is refused without a session. Verified by
-          # driving iterations from the offline JSON fixture while the mock still read
-          # MySQL - every request came back 500. Worth knowing because handler stderr is
-          # not forwarded under --use-mock, so that auth failure presents as a bare 500
-          # with no explanation anywhere in the run output.
-          postman collection run "${COLLECTION}" \
+          # Needs POSTMAN_API_KEY for the handler's own pm.datasets call, not just for
+          # the iteration data. Without a session every request returns a bare 500:
+          # handler stderr is not forwarded under --use-mock, so the underlying
+          # "Authentication required" appears nowhere in the run output.
+          postman collection run "${CONTRACT}" \
             --iteration-data-dataset "postman/datasets/Cards-MySQL-Database/Cards-MySQL-Database.dataset.yaml" \
-            --iteration-data-view "Karteikarte_default_view" \
+            --iteration-data-view "Karteikarte_one_id" \
             --use-mock "{{base_url}} mock:./postman/mocks/kiga-3000-api-mysql/config.yaml mysql" \
             --no-report-events
 

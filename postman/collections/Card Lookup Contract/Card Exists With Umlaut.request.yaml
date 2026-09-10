@@ -1,0 +1,29 @@
+$kind: http-request
+description: |-
+  Existence plus encoding: id 4 is Florian Daeubler in the seed, whose surname carries
+  an umlaut.
+
+  This is one of the two requests that assert a specific value rather than a shape. It
+  is worth the coupling to db/seed.sql: an exact match on the surname is what proves
+  UTF-8 survived the whole path - MySQL's utf8mb4 column, the dataset engine, the JSON
+  serialiser and the HTTP layer. A shape assertion would pass on mojibake.
+url: "{{base_url}}/api/cards/4"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 200", () => pm.response.to.have.status(200));
+
+      const card = pm.response.json();
+
+      pm.test("id matches", () => pm.expect(card.id).to.eql(4));
+
+      // Byte-exact, so a mojibake round-trip ("DÃ¤ubler") fails rather than passing a
+      // looser check.
+      pm.test("Umlaut survives end to end", () =>
+        pm.expect(card.nachname).to.eql("Däubler"));
+
+      pm.test("Surname is not mojibake", () =>
+        pm.expect(card.nachname).to.not.include("Ã"));
+    language: text/javascript
+order: 2000

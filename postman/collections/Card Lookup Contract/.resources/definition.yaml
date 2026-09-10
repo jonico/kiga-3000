@@ -1,0 +1,15 @@
+$kind: collection
+description: |-
+  Contract tests for GET /api/cards/{id}, driven by hardcoded ids rather than iteration
+  data. The same endpoint is exercised repeatedly to cover a card that exists, ids that
+  do not, and inputs that are not valid ids at all.
+
+  Deliberately free of iteration data: every request carries its own id, so the suite
+  says the same thing whatever the data source. That also lets it run unchanged against
+  either the real Java API or the MySQL-backed local mock, which is the point - the mock
+  is only faithful if the same contract holds against both.
+
+  Assertions check shape rather than specific people, so seeding more children does not
+  break the suite. The two exceptions are called out in the requests that make them.
+variables:
+  base_url: http://127.0.0.1:8080
