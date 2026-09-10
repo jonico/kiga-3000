@@ -6,3 +6,10 @@ bin/
 .idea/
 *.iml
 .DS_Store
+
+# Local sqlite cache the Postman CLI materialises under a dataset's data_dir when
+# it runs a dynamic source. Regenerated on every `postman collection run
+# --iteration-data-dataset`, so it is build output, not data.
+# Scoped to datasets on purpose: collections keep a tracked
+# .resources/definition.yaml, so .resources/ must not be ignored wholesale.
+postman/datasets/**/.resources/data.db
