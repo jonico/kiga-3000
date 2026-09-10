@@ -48,6 +48,9 @@ env:
   # Pinned so a CLI release cannot change review outcomes on its own.
   POSTMAN_CLI_VERSION: "1.56.1"
   SPEC: postman/specs/KiGa 3000 API.yaml
+  CLOUD_CONTRACT: postman/collections/Cloud Mock Contract
+  CLOUD_MOCK_FIXTURE: https://kiga-3000-api-mock-008fa0.mock.automotive-demo.postman.dev
+  CLOUD_MOCK_MYSQL: https://kiga-3000-api-mock-mysql-backed-54468c.mock.automotive-demo.postman.dev
   COLLECTION: postman/collections/Card Validation from MySQL
   CONTRACT: postman/collections/Card Lookup Contract
 
@@ -270,6 +273,49 @@ jobs:
             reports/
             /tmp/api.log
           if-no-files-found: warn
+
+  # ------------------------------------------------- deployed cloud mocks
+  cloud-mocks:
+    name: Contract — deployed cloud mocks
+    runs-on: ubuntu-latest
+    # Non-blocking: this leg depends on two mock deployments that live outside the repo.
+    # Somebody undeploying one, or rotating its URL, is not a reason to block a merge on
+    # a code change - but it is worth seeing in the run.
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: json-fixture
+            url: https://kiga-3000-api-mock-008fa0.mock.automotive-demo.postman.dev
+          - name: mysql-backed
+            url: https://kiga-3000-api-mock-mysql-backed-54468c.mock.automotive-demo.postman.dev
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Postman CLI
+        run: npm install -g "postman-cli@${POSTMAN_CLI_VERSION}"
+
+      # No login. This leg sends plain HTTP to a published URL and uses no dataset, so
+      # it needs no Postman session - hence no --output either, which does.
+
+      - name: Contract against the ${{ matrix.name }} deployment
+        run: |
+          # Every request carries x-mock-scenario: default. Without it the deployment
+          # falls to its own default scenario, which reads a dataset via pm.datasets -
+          # local-mock only - and every data-serving endpoint answers 500.
+          #
+          # The error branches are requested with x-mock-response-code rather than by
+          # sending bad input, because the spec-generated scenario does no input
+          # validation: /api/cards/abc answers 200 with the canned card. See the
+          # request descriptions.
+          postman collection run "${CLOUD_CONTRACT}" \
+            --env-var "base_url=${{ matrix.url }}" \
+            --no-report-events
 
   # ------------------------------------ collection vs JSON fixture, spawned local mock
   mock-dataset:

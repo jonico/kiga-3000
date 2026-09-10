@@ -1,0 +1,28 @@
+$kind: http-request
+description: |-
+  The 404 branch, selected the same way and for the same reason as the 400 one.
+url: "{{base_url}}/api/cards/1"
+method: GET
+headers:
+  - key: x-mock-scenario
+    value: default
+  - key: x-mock-response-code
+    value: "404"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 404 as requested", () => pm.response.to.have.status(404));
+
+      const body = pm.response.json();
+
+      pm.test("Error body has the uniform shape", () => {
+        pm.expect(Object.keys(body).sort()).to.eql(["error", "status"]);
+        pm.expect(body.status).to.eql(404);
+      });
+
+      pm.test("No card fields leak into an error response", () => {
+        pm.expect(body).to.not.have.property("vorname");
+        pm.expect(body).to.not.have.property("nachname");
+      });
+    language: text/javascript
+order: 4000

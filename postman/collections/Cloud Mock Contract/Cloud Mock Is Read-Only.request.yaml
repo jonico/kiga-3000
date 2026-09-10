@@ -1,0 +1,30 @@
+$kind: http-request
+description: |-
+  The read-only contract, on a published URL where it matters most: this mock is
+  reachable by anyone who has the address.
+
+  Targets the collection endpoint, not /api/cards/{id}. The spec-generated scenario only
+  routes POST /api/cards; a POST to an id path falls through to its catch-all and answers
+  404 "Endpoint not defined", which would look like a missing read-only guard rather than
+  a missing route.
+url: "{{base_url}}/api/cards"
+method: POST
+headers:
+  - key: x-mock-scenario
+    value: default
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 405", () => pm.response.to.have.status(405));
+
+      pm.test("Allow header advertises GET only", () =>
+        pm.expect((pm.response.headers.get("Allow") || "").toUpperCase()).to.eql("GET"));
+
+      pm.test("Error body has the uniform shape", () => {
+        const body = pm.response.json();
+        pm.expect(Object.keys(body).sort()).to.eql(["error", "status"]);
+        pm.expect(body.status).to.eql(405);
+        pm.expect(body.error.toLowerCase()).to.include("read-only");
+      });
+    language: text/javascript
+order: 5000
