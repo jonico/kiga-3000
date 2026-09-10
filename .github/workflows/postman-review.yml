@@ -11,11 +11,22 @@
 #   mock-dataset   The same collection driven by a static JSON dataset against a local
 #                  Postman mock server spawned for the run. No database, no JVM.
 #
-# Both test legs need POSTMAN_API_KEY. Dataset-backed runs are not offline: without a
-# session the CLI stops at "Dataset source access denied: Authentication required".
-# The key also matters for the lint - unauthenticated, `postman spec lint` reports
-# "No issues found" because the governance rules are never fetched, which in CI reads
-# as a pass rather than as a skip.
+# POSTMAN_API_KEY is needed by two of the three jobs, for different reasons, and
+# deliberately not by the third:
+#
+#   mysql-dataset  Needs it. What requires a session is the remote SOURCE, not the
+#                  dataset: a dynamic mysql datasource fails with "Dataset source access
+#                  denied: Authentication required".
+#   spec-lint      Needs it for a subtler reason. Unauthenticated, `postman spec lint`
+#                  reports "No issues found" because it never fetches the governance
+#                  rules, so in CI a missing key reads as a pass rather than a skip.
+#   mock-dataset   Needs it only for --output. Its dataset is a static
+#                  local_filesystem JSON source that the engine reads offline, and the
+#                  run itself - including pm.datasets inside the mock handler - was
+#                  verified to pass with no session at all. What refuses without one is
+#                  the report writer: "You must be signed in to use --output". Drop
+#                  --output and its upload-artifact step and this job becomes fully
+#                  secret-free, which would also let it run on fork pull requests.
 
 name: Postman review
 
@@ -136,7 +147,7 @@ jobs:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
         run: |
           if [ -z "${POSTMAN_API_KEY}" ]; then
-            echo "::error title=Missing POSTMAN_API_KEY::Dataset-backed collection runs require a Postman session; the CLI cannot read a dataset source without one."
+            echo "::error title=Missing POSTMAN_API_KEY::The Cards MySQL Database dataset is a dynamic mysql source, and the engine refuses to read one without a Postman session."
             exit 1
           fi
           postman login --with-api-key "${POSTMAN_API_KEY}"
@@ -237,8 +248,12 @@ jobs:
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
         run: |
+          # Not needed to read this dataset - it is a static local_filesystem source and
+          # the whole run, pm.datasets included, works with no session. The login is
+          # here purely because --output refuses without one. Remove this step, --output
+          # and the artifact upload to make this leg secret-free.
           if [ -z "${POSTMAN_API_KEY}" ]; then
-            echo "::error title=Missing POSTMAN_API_KEY::Dataset-backed collection runs require a Postman session; the CLI cannot read a dataset source without one."
+            echo "::error title=Missing POSTMAN_API_KEY::Only --output needs it on this leg; see the note in this step."
             exit 1
           fi
           postman login --with-api-key "${POSTMAN_API_KEY}"
