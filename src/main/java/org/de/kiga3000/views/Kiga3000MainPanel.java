@@ -214,7 +214,7 @@ public class Kiga3000MainPanel extends JPanel implements Suchfenster,
 			java.net.URL helpPage =
 					org.de.kiga3000.KigaResources.locate(
 							org.de.kiga3000.KigaResources.TITLE_PAGE);
-			if (helpPage == null) {
+			if (null == helpPage) {
 				throw new java.io.FileNotFoundException(
 						org.de.kiga3000.KigaResources.TITLE_PAGE);
 			}
@@ -620,7 +620,7 @@ public class Kiga3000MainPanel extends JPanel implements Suchfenster,
 	public Integer getKarteiID() {
 		int row = ergebnisTabelle.getSelectedRow();
 		Integer id = Integer.getInteger("0");
-		if (row != -1) {
+		if (-1 != row) {
 			//		zuerst ID herausfinden
 			id = (Integer) (ergebnisModel.getValueAt(row, 0));
 		}

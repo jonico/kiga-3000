@@ -25,7 +25,7 @@ final class Json {
     static String cards(List<CardSummary> cards) {
         StringBuilder sb = new StringBuilder("[");
         for (int i = 0; i < cards.size(); i++) {
-            if (i > 0) {
+            if (0 < i) {
                 sb.append(',');
             }
             sb.append(card(cards.get(i)));
@@ -47,7 +47,7 @@ final class Json {
      * everything else is emitted as-is and the response is sent as UTF-8.
      */
     private static String string(String value) {
-        if (value == null) {
+        if (null == value) {
             return "null";
         }
         StringBuilder sb = new StringBuilder(value.length() + 2).append('"');
@@ -60,7 +60,7 @@ final class Json {
                 case '\r' -> sb.append("\\r");
                 case '\t' -> sb.append("\\t");
                 default -> {
-                    if (ch < 0x20) {
+                    if (0x20 > ch) {
                         sb.append("\\u%04x".formatted((int) ch));
                     } else {
                         sb.append(ch);

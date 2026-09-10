@@ -71,7 +71,7 @@ public class SuchDatumsholerSQLImpl
 			catch (KigaException e)  {
 							throw new KigaException(messenger.getMessage("KiGa.EndDateWrongFormat"));
 			}
-			if (anfangsgruppe>endgruppe || anfangsgruppe<1)
+			if (anfangsgruppe>endgruppe || 1>anfangsgruppe)
 						throw new KigaException(messenger.getMessage("KiGa.WrongGroups"));
 			p.setDate(1,danfang);
 			p.setDate(2,dende);

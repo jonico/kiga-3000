@@ -39,15 +39,15 @@ public class SQLHelfer {
 	private static DateFormat df=new SimpleDateFormat("dd.MM.yyyy",Locale.ROOT);
 	private static Messenger messenger = new Messenger();
 	public static  java.sql.Date  pruefeDaten (Karteikarte i) throws KigaException{
-		if (i.getKindGeburtsDatum().length()<6)
+		if (6>i.getKindGeburtsDatum().length())
 			throw new KigaException(messenger.getMessage("KiGa.DateOfBirthChildToShort"));
-		if (i.getGesundheitsHinweise().length()>255)
+		if (255<i.getGesundheitsHinweise().length())
 			throw new KigaException(messenger.getMessage("KiGa.HealthInfoTooLong"));
-		if (i.getSonstiges().length()>255)
+		if (255<i.getSonstiges().length())
 			throw new KigaException(messenger.getMessage("KiGa.InfoTooLong"));
-		if (i.getKindVorname().length()<1)
+		if (1>i.getKindVorname().length())
 			throw new KigaException(messenger.getMessage("KiGa.SurnameChildTooShort"));
-		if (i.getKindNachname().length()<1)
+		if (1>i.getKindNachname().length())
 			throw new KigaException(messenger.getMessage("KiGa.NameOfChildTooShort"));
 		return getDatumausString(i.getKindGeburtsDatum());
 	}
@@ -62,7 +62,7 @@ public class SQLHelfer {
 	 * NullPointerException while loading perfectly ordinary cards.
 	 */
 	public static String getStringausDatum(java.sql.Date i) {
-		if (i == null) {
+		if (null == i) {
 			return "";
 		}
 		Date dummy=new Date(i.getTime());
@@ -75,7 +75,7 @@ public class SQLHelfer {
 	 * @return null for blank input, which the caller binds as SQL NULL
 	 */
 	public static java.sql.Date getDatumausString(String i) throws KigaException {
-		if (i == null || i.trim().isEmpty()) {
+		if (null == i || i.trim().isEmpty()) {
 			return null;
 		}
 		df.setLenient(true);

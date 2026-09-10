@@ -36,7 +36,7 @@ public class KarteiListSelection implements ListSelectionListener {
 	public void valueChanged(ListSelectionEvent e) {
 
 		int i=table.getSelectedRow();
-		if (i==-1) {
+		if (-1==i) {
 			mainPanel.ergebnisAbmeldeKnopf.setEnabled(false);
 			mainPanel.ergebnisAnzeigeKnopf.setEnabled(false);
 		}

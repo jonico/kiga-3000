@@ -39,7 +39,7 @@ public final class JpaEquivalenceCheck {
         } finally {
             KarteikarteRepository.shutdown();
         }
-        if (failures > 0) {
+        if (0 < failures) {
             System.exit(1);
         }
     }
@@ -58,7 +58,7 @@ public final class JpaEquivalenceCheck {
         }
 
         KarteikarteImpl viaJpa = KarteikarteRepository.find(id);
-        if (viaJpa == null) {
+        if (null == viaJpa) {
             fail("  JPA found no card with id " + id);
             return;
         }

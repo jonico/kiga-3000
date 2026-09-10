@@ -152,7 +152,7 @@ public class KigaMainViewControl extends KigaControl {
 				// get protocoll table
 				HashMap protTab = prot.getErrorTab();
 				// everything ok ?
-				if (protTab.containsValue(prot.typeError) != true) {
+				if (true != protTab.containsValue(prot.typeError)) {
 				    // do it !
 					karteiCont.insertKarteiEinzeln(karteikarte);
 				}
@@ -168,7 +168,7 @@ public class KigaMainViewControl extends KigaControl {
 					// get protocoll table
 					HashMap protTab = prot.getErrorTab();
 					// everything ok ?
-					if (protTab.containsValue(prot.typeError) != true) {
+					if (true != protTab.containsValue(prot.typeError)) {
 						// do it !
 						karteiCont.updateKarteiEinzeln(karteikarte);
 					}
@@ -249,7 +249,7 @@ public class KigaMainViewControl extends KigaControl {
 		JPanel ergebnisPanel = view.getErgebnisPanel();
 		JFileChooser ch = new JFileChooser();
 		// guess what ?
-		if (ch.showSaveDialog(ergebnisPanel) == JFileChooser.APPROVE_OPTION) {
+		if (JFileChooser.APPROVE_OPTION == ch.showSaveDialog(ergebnisPanel)) {
 			// yes a dialog !
 			File file = ch.getSelectedFile();
 			try {
@@ -267,7 +267,7 @@ public class KigaMainViewControl extends KigaControl {
 						// seperated by tab
 						pw.print('\t');
 					}
-					if (columns > -1)
+					if (-1 < columns)
 						pw.println(ergebnisTabelle.getValueAt(i, columns));
 				}
 				// close it
@@ -292,7 +292,7 @@ public class KigaMainViewControl extends KigaControl {
 	 */
 	public void mouseClicked(MouseEvent e) {
 		try {
-			if (e.getClickCount() == 2) {
+			if (2 == e.getClickCount()) {
 				// if double click get Primary key
 				Integer Id = view.getKarteiID();
 				int karteiId = Id.intValue();

@@ -39,7 +39,7 @@ public class DateStringConverter implements AttributeConverter<String, java.sql.
      */
     @Override
     public java.sql.Date convertToDatabaseColumn(String attribute) {
-        if (attribute == null || attribute.trim().isEmpty()) {
+        if (null == attribute || attribute.trim().isEmpty()) {
             return null;
         }
         try {
@@ -61,7 +61,7 @@ public class DateStringConverter implements AttributeConverter<String, java.sql.
      */
     @Override
     public String convertToEntityAttribute(java.sql.Date dbData) {
-        if (dbData == null) {
+        if (null == dbData) {
             return "";
         }
         try {

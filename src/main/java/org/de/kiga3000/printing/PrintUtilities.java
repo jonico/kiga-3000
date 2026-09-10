@@ -77,7 +77,7 @@ public PrintUtilities(Component componentToBePrinted) {
    * route.
    */
   public int print(Graphics g, PageFormat pageFormat, int pageIndex) {
-    if (pageIndex > 0) {
+    if (0 < pageIndex) {
       return(NO_SUCH_PAGE);
     }
 
@@ -85,7 +85,7 @@ public PrintUtilities(Component componentToBePrinted) {
     int myHeight = componentToBePrinted.getHeight();
     // A zero-sized component would previously have thrown IllegalArgumentException
     // from the BufferedImage constructor, inside a print job, with no useful message.
-    if (myWidth <= 0 || myHeight <= 0) {
+    if (0 >= myWidth || 0 >= myHeight) {
       return(NO_SUCH_PAGE);
     }
 

@@ -48,7 +48,7 @@ public class SuchGruppenholerSQLImpl extends SuchDatenholerSQLImpl  implements S
 	 * @see SuchGruppenholer#setGruppe(short)
 	 */
 	public void setGruppe(byte i) throws SQLException, KigaException {
-		if (i<1)
+		if (1>i)
 			throw new KigaException(messenger.getMessage("KiGa.WroungGoupNumber"));
 		p.setByte(1,i);
 	}
