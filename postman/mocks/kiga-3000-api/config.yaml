@@ -1,0 +1,19 @@
+version: 1
+id: 1fba62c4-516f-4dbc-b330-10043456465b
+name: KiGa 3000 API Mock
+slug: kiga-3000-api-mock
+protocol: http
+port: 4010
+scenarios:
+  # Serves from postman/datasets/Cards-Mock-Fixture/cards.json, the same file the
+  # Cards Mock Fixture dataset reads, so iteration data and mock responses stay in
+  # step. Default because the review workflow drives the collection against it.
+  - name: fixture
+    path: ./fixture.js
+    default: true
+  # Exactly as emitted by `postman mock generate` from the OpenAPI spec: one canned
+  # example per response. Kept so --update can refresh it from the spec, and as the
+  # spec-faithful baseline. Not suitable for data-driven runs - GET /api/cards/{id}
+  # answers with the same card for every id.
+  - name: default
+    path: ./default.js

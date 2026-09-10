@@ -1,0 +1,8 @@
+[
+  { "id": 1, "gruppe": 1, "vorname": "Johanna",  "nachname": "Bergmann",      "geburtsdatum": "16.02.1980", "eintritt": "01.09.1983" },
+  { "id": 2, "gruppe": 1, "vorname": "Jana",     "nachname": "Nicolai",       "geburtsdatum": "20.11.1984", "eintritt": "01.09.1987" },
+  { "id": 4, "gruppe": 2, "vorname": "Florian",  "nachname": "Däubler",       "geburtsdatum": "02.05.1979", "eintritt": "01.09.1982" },
+  { "id": 5, "gruppe": 2, "vorname": "Nigel",    "nachname": "Abbott",        "geburtsdatum": "17.03.1981", "eintritt": "01.09.1984" },
+  { "id": 7, "gruppe": 3, "vorname": "Amelie",   "nachname": "Vogtländer",    "geburtsdatum": "11.07.1983", "eintritt": "01.09.1986" },
+  { "id": 9, "gruppe": 3, "vorname": "Sören",    "nachname": "Weiß-Grünwald", "geburtsdatum": "30.09.1982", "eintritt": "01.09.1985" }
+]

@@ -1,0 +1,272 @@
+# Review workflow for the Postman artefacts in this repository.
+#
+# Three independent legs:
+#
+#   spec-lint      Governance-lints postman/specs. Advisory only - the job carries
+#                  continue-on-error, so findings surface in the run summary and never
+#                  block a merge.
+#   mysql-dataset  The full integration path: a throwaway MySQL seeded from db/, the
+#                  real Java API on top of it, and the collection driven by the MySQL
+#                  dataset so every seeded row is checked against the API.
+#   mock-dataset   The same collection driven by a static JSON dataset against a local
+#                  Postman mock server spawned for the run. No database, no JVM.
+#
+# Both test legs need POSTMAN_API_KEY. Dataset-backed runs are not offline: without a
+# session the CLI stops at "Dataset source access denied: Authentication required".
+# The key also matters for the lint - unauthenticated, `postman spec lint` reports
+# "No issues found" because the governance rules are never fetched, which in CI reads
+# as a pass rather than as a skip.
+
+name: Postman review
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: postman-review-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned so a CLI release cannot change review outcomes on its own.
+  POSTMAN_CLI_VERSION: "1.56.1"
+  SPEC: postman/specs/KiGa 3000 API.yaml
+  COLLECTION: postman/collections/Card Validation from MySQL
+
+jobs:
+  # ---------------------------------------------------------------- advisory lint
+  spec-lint:
+    name: Spec lint (advisory)
+    runs-on: ubuntu-latest
+    # Whole job is non-blocking: the ask is that linting never fails the build.
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Postman CLI
+        run: npm install -g "postman-cli@${POSTMAN_CLI_VERSION}"
+
+      - name: Authenticate
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+        run: |
+          if [ -z "${POSTMAN_API_KEY}" ]; then
+            echo "::warning title=Spec lint skipped::POSTMAN_API_KEY is not set. Without it the CLI does not fetch governance rules and reports \"No issues found\" regardless of the spec, so the lint is skipped rather than reported as clean."
+            exit 1
+          fi
+          postman login --with-api-key "${POSTMAN_API_KEY}"
+
+      - name: Lint the OpenAPI spec
+        id: lint
+        run: |
+          set -o pipefail
+          postman spec lint "${SPEC}" 2>&1 | tee /tmp/spec-lint.txt
+
+      - name: Report findings
+        if: always()
+        run: |
+          {
+            echo "## OpenAPI spec lint — advisory"
+            echo
+            echo "Step outcome: \`${{ steps.lint.outcome }}\`. Findings are informational and never fail this workflow."
+            echo
+            echo '```'
+            cat /tmp/spec-lint.txt 2>/dev/null || echo "(no lint output — see the Authenticate step)"
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: spec-lint
+          path: /tmp/spec-lint.txt
+          if-no-files-found: warn
+
+  # ------------------------------------------- collection vs seeded MySQL, real API
+  mysql-dataset:
+    name: Collection run — MySQL dataset
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          # Only the root password. The database is deliberately NOT created via
+          # MYSQL_DATABASE: db/schema.sql creates it itself as utf8mb4, and letting the
+          # entrypoint create it first would leave it on the server default charset and
+          # mangle the umlauts the fixtures exist to exercise.
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          # pom.xml targets release 25 and the jar is class-file major 69, which a
+          # JDK 21 runtime refuses to load.
+          java-version: "25"
+          cache: maven
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Postman CLI
+        run: npm install -g "postman-cli@${POSTMAN_CLI_VERSION}"
+
+      - name: Authenticate
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+        run: |
+          if [ -z "${POSTMAN_API_KEY}" ]; then
+            echo "::error title=Missing POSTMAN_API_KEY::Dataset-backed collection runs require a Postman session; the CLI cannot read a dataset source without one."
+            exit 1
+          fi
+          postman login --with-api-key "${POSTMAN_API_KEY}"
+
+      - name: Seed the throwaway MySQL
+        run: |
+          set -euo pipefail
+          m() { mysql -h 127.0.0.1 -P 3306 --protocol=TCP "$@"; }
+
+          # schema.sql opens with CREATE DATABASE + USE + DROP TABLE. The application
+          # user KiGa holds ALL on Kindergarten but only USAGE on *.*, so it cannot
+          # CREATE DATABASE even when the database already exists. Hence root here.
+          m -uroot -proot < db/schema.sql
+
+          # Recreate the account the application expects. persistence.xml and the
+          # dataset DSN both hardcode KiGa/Kiga3000 against localhost/Kindergarten, so
+          # matching them here is what lets both run unmodified in CI.
+          m -uroot -proot -e "
+            CREATE USER IF NOT EXISTS 'KiGa'@'%' IDENTIFIED BY 'Kiga3000';
+            GRANT ALL PRIVILEGES ON Kindergarten.* TO 'KiGa'@'%';
+            FLUSH PRIVILEGES;"
+
+          # seed.sql is INSERTs only, with no USE of its own.
+          m -uroot -proot Kindergarten < db/seed.sql
+
+          echo "--- seeded, as the application user ---"
+          m -uKiGa -pKiga3000 Kindergarten -e "
+            SELECT COUNT(*) AS seeded_cards FROM Karteikarte;
+            SELECT gruppe, COUNT(*) AS cards FROM Karteikarte GROUP BY gruppe ORDER BY gruppe;"
+
+      - name: Build the API
+        run: |
+          mvn -B -q -DskipTests package
+          mvn -B -q dependency:build-classpath -Dmdep.outputFile=target/cp.txt
+
+      - name: Start the API
+        run: |
+          set -euo pipefail
+          java -cp "target/classes:$(cat target/cp.txt)" \
+            org.de.kiga3000.api.KigaApiServer 8080 > /tmp/api.log 2>&1 &
+          echo $! > /tmp/api.pid
+          # Hibernate validates all 39 mapped columns against the live schema at
+          # startup, so a schema drift shows up here as a failure to become healthy.
+          for i in $(seq 1 60); do
+            if curl -fsS http://127.0.0.1:8080/api/health > /dev/null 2>&1; then
+              echo "API healthy after ${i}s"
+              curl -s http://127.0.0.1:8080/api/health; echo
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "::error title=API never became healthy::See the api-log artifact."
+          cat /tmp/api.log
+          exit 1
+
+      - name: Run the collection against the MySQL dataset
+        run: |
+          # --output rather than -r junit: the junit/json reporters reject v3 YAML
+          # collections outright ("Reporter \"junit\" is not supported for
+          # multi-protocol collections") even though this one is REST-only. --output is
+          # the v3-native equivalent and writes a summary plus a streaming execution log.
+          mkdir -p reports
+          postman collection run "${COLLECTION}" \
+            --iteration-data-dataset "postman/datasets/Cards-MySQL-Database/Cards-MySQL-Database.dataset.yaml" \
+            --iteration-data-view "Karteikarte_default_view" \
+            --output reports \
+            --no-report-events
+
+      - name: Stop the API
+        if: always()
+        run: |
+          [ -f /tmp/api.pid ] && kill "$(cat /tmp/api.pid)" 2>/dev/null || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mysql-dataset-results
+          path: |
+            reports/
+            /tmp/api.log
+          if-no-files-found: warn
+
+  # ------------------------------------ collection vs JSON fixture, spawned local mock
+  mock-dataset:
+    name: Collection run — JSON dataset against local mock
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install Postman CLI
+        run: npm install -g "postman-cli@${POSTMAN_CLI_VERSION}"
+
+      - name: Authenticate
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+        run: |
+          if [ -z "${POSTMAN_API_KEY}" ]; then
+            echo "::error title=Missing POSTMAN_API_KEY::Dataset-backed collection runs require a Postman session; the CLI cannot read a dataset source without one."
+            exit 1
+          fi
+          postman login --with-api-key "${POSTMAN_API_KEY}"
+
+      - name: Show the fixture rows the run will be driven with
+        run: |
+          postman dataset view run \
+            -d "postman/datasets/Cards-Mock-Fixture/Cards-Mock-Fixture.dataset.yaml" \
+            "Karteikarte_default_view"
+
+      - name: Run the collection against a spawned local mock
+        run: |
+          mkdir -p reports
+          # --use-mock starts the mock, rewrites {{base_url}} onto it for the duration of
+          # the run, and stops it afterwards, so there is no background process to manage.
+          # It needs the manifest FILE; handing it the mock directory fails with EISDIR.
+          # The fixture scenario answers from the same cards.json the dataset reads, so
+          # the assertions compare the fixture against itself through the HTTP layer.
+          postman collection run "${COLLECTION}" \
+            --iteration-data-dataset "postman/datasets/Cards-Mock-Fixture/Cards-Mock-Fixture.dataset.yaml" \
+            --iteration-data-view "Karteikarte_default_view" \
+            --use-mock "{{base_url}} mock:./postman/mocks/kiga-3000-api/config.yaml fixture" \
+            --output reports \
+            --no-report-events
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mock-dataset-results
+          path: reports/
+          if-no-files-found: warn
