@@ -6,6 +6,8 @@
  */
 package org.de.kiga3000.control;
 
+import java.awt.GraphicsEnvironment;
+import java.awt.Rectangle;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.sql.SQLException;
@@ -159,9 +161,8 @@ public class KigaMainControl {
 			KigaAppIcon.install(hauptFenster);
             // define usual exit and stuff
 			hauptFenster.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-			hauptFenster.setBounds(0, 0, 1024, 768);
+			placeOnScreen(hauptFenster);
 			hauptFenster.setVisible(true);
-			hauptFenster.setExtendedState(JFrame.MAXIMIZED_BOTH);
 			// Without this the window opens behind whatever was already frontmost -
 			// usually the terminal it was started from. setVisible(true) maps the
 			// window but does not activate the application on macOS.
@@ -185,9 +186,48 @@ public class KigaMainControl {
 			JOptionPane.showMessageDialog(null, sysMessenger.getMessage(
 					"KiGa.log.Runtime", e.getMessage()), messenger
 					.getMessage("KiGa.title"), JOptionPane.ERROR_MESSAGE);
-			// if the view is not displayable what else should we do ? 
+			// if the view is not displayable what else should we do ?
 			System.exit(1);
 		}
+	}
+
+	/** The size the layout and the card dialog were both designed around. */
+	private static final int DESIGN_WIDTH = 1024;
+	private static final int DESIGN_HEIGHT = 768;
+
+	/**
+	 * Sizes and centres the main window, leaving it in the normal, un-zoomed state.
+	 *
+	 * <p>What this replaced, and why it had to go:
+	 *
+	 * <pre>
+	 *   hauptFenster.setBounds(0, 0, 1024, 768);
+	 *   hauptFenster.setVisible(true);
+	 *   hauptFenster.setExtendedState(JFrame.MAXIMIZED_BOTH);
+	 * </pre>
+	 *
+	 * <p>That produced a window the user could not move to a second display, for two
+	 * independent reasons. {@code setBounds(0, 0, ...)} places the frame at the
+	 * <em>primary</em> display's origin, so it always appeared on screen one whatever
+	 * the user was actually working on. {@code MAXIMIZED_BOTH} then zooms it, and on
+	 * macOS the window server will not drag a zoomed window to another screen - so the
+	 * frame was stuck on the display it had been zoomed on, with no way out short of
+	 * un-zooming it first.
+	 *
+	 * <p>Centring the design size on the default screen keeps the window in the normal
+	 * state, so it can be dragged between displays and zoomed by the user if they want
+	 * that. It is capped to the screen's usable area rather than the raw screen size,
+	 * because {@link GraphicsEnvironment#getMaximumWindowBounds()} already excludes the
+	 * menu bar and the Dock - a 1024x768 window on a small laptop display would
+	 * otherwise put its lower edge underneath the Dock.
+	 */
+	private static void placeOnScreen(JFrame fenster) {
+		Rectangle usable = GraphicsEnvironment.getLocalGraphicsEnvironment()
+				.getMaximumWindowBounds();
+		fenster.setSize(Math.min(DESIGN_WIDTH, usable.width),
+				Math.min(DESIGN_HEIGHT, usable.height));
+		// null centres on the default screen, rather than at its origin.
+		fenster.setLocationRelativeTo(null);
 	}
 
 }
