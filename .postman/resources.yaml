@@ -4,8 +4,10 @@ cloudResources:
     ../postman/collections/Card Validation from MySQL: 50602431-6dc8ebc8-dd85-4ee5-8066-57e83732b740
     ../postman/collections/KiGa 3000: 50602431-eb9c82a4-a696-469f-ba0d-a56fc83a315b
     ../postman/collections/Stream Deck MCP Control: 6aa174bb530359ffe176a394
+    ../postman/collections/Cloud Mock Contract: 50602431-6f6528d9-a9fd-464d-95a8-68700d04d345
   datasets:
     ../postman/datasets/Cards-MySQL-Database/Cards-MySQL-Database.dataset.yaml: fe7a53b2-3ba1-492a-a819-d7df1d00ebe0
+    ../postman/datasets/Cards-Mock-Fixture/Cards-Mock-Fixture.dataset.yaml: f7537ad6-83a3-4c2d-b973-08f4b471dc49
   mocks:
     ../postman/mocks/kiga-3000-api-mysql/config.yaml: ac9f28c1-fac5-41a4-8d1b-419e9761f3ca
     ../postman/mocks/kiga-3000-api/config.yaml: 1fba62c4-516f-4dbc-b330-10043456465b
