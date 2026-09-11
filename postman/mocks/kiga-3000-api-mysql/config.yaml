@@ -1,0 +1,14 @@
+version: 1
+id: ac9f28c1-fac5-41a4-8d1b-419e9761f3ca
+name: KiGa 3000 API Mock (MySQL-backed)
+slug: kiga-3000-api-mock-mysql
+protocol: http
+port: 4011
+scenarios:
+  - name: mysql
+    path: ./mysql.js
+    default: true
+    id: 01a08c3f-d287-715a-a69a-50172b50aed1
+  - name: default
+    path: ./default.js
+    id: 01a08c3f-d2ac-713d-b148-b41851650fa8

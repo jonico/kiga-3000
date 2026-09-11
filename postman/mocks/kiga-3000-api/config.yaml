@@ -1,0 +1,14 @@
+version: 1
+id: 1fba62c4-516f-4dbc-b330-10043456465b
+name: KiGa 3000 API Mock
+slug: kiga-3000-api-mock
+protocol: http
+port: 4010
+scenarios:
+  - name: fixture
+    path: ./fixture.js
+    default: true
+    id: 01a08c3f-d288-7750-94d7-c51febb694a0
+  - name: default
+    path: ./default.js
+    id: 01a08c3f-d2a8-77d6-b067-8b27b3151b78

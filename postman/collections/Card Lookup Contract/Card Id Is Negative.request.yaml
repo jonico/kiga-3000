@@ -1,0 +1,25 @@
+$kind: http-request
+description: |-
+  Wrong value, but a well-formed one: -1 parses as an integer, so it is not a 400, and
+  no row can match it, so it is a 404.
+
+  Included because it is the case most likely to diverge between the real API and a
+  mock. Integer.parseInt accepts the leading minus, so a handler that validates with a
+  digits-only pattern would wrongly answer 400 here.
+url: "{{base_url}}/api/cards/-1"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 404, not 400 - a negative integer is still an integer", () => {
+        pm.response.to.have.status(404);
+        pm.expect(pm.response.code).to.not.eql(400);
+      });
+
+      pm.test("Error body has the uniform shape", () => {
+        const body = pm.response.json();
+        pm.expect(Object.keys(body).sort()).to.eql(["error", "status"]);
+        pm.expect(body.status).to.eql(404);
+      });
+    language: text/javascript
+order: 5000

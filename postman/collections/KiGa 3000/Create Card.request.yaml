@@ -1,0 +1,61 @@
+$kind: http-request
+description: |-
+  Creates a card from the writable projection.
+
+  The body carries the five writable fields and no others. That is the whole contract:
+  the API reads and writes the same six fields (id is server-assigned), and the 33
+  remaining columns - religion, nationality, impfungen, krankheiten,
+  gesundheitshinweise, arzt, krankenkasse, contacts, addresses and the free-text notes
+  - can neither be read nor written here. They are special-category personal data under
+  GDPR Article 9 and stay with the desktop client.
+
+  The id is captured into a collection variable so Replace Card and Delete Card can
+  operate on it, which also means this collection leaves the database as it found it.
+url: "{{base_url}}/api/cards"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "gruppe": 3,
+      "vorname": "Jörg",
+      "nachname": "Vogtländer",
+      "geburtsdatum": "06.05.2018",
+      "eintritt": "01.09.2021"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 201 Created", () => pm.response.to.have.status(201));
+
+      pm.test("Location points at the new card", () => {
+        const location = pm.response.headers.get("Location");
+        pm.expect(location, "Location header missing").to.be.a("string");
+        pm.expect(location).to.match(/^\/api\/cards\/\d+$/);
+      });
+
+      const card = pm.response.json();
+
+      pm.test("Response is the created card, in the same six-field shape as a read", () =>
+        pm.expect(Object.keys(card).sort()).to.eql(
+          ["eintritt", "geburtsdatum", "gruppe", "id", "nachname", "vorname"]));
+
+      pm.test("The server assigned an id", () => {
+        pm.expect(card.id).to.be.a("number");
+        pm.expect(card.id).to.be.above(0);
+      });
+
+      pm.test("Sent values came back unchanged, umlauts included", () => {
+        pm.expect(card.vorname).to.eql("Jörg");
+        pm.expect(card.nachname).to.eql("Vogtländer");
+        pm.expect(card.gruppe).to.eql(3);
+        pm.expect(card.geburtsdatum).to.eql("06.05.2018");
+      });
+
+      // Handed to Replace Card and Delete Card, so the run cleans up after itself.
+      pm.collectionVariables.set("created_card_id", card.id);
+      pm.collectionVariables.set("created_card_location", pm.response.headers.get("Location"));
+    language: text/javascript
+order: 6000

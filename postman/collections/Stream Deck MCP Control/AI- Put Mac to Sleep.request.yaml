@@ -1,0 +1,55 @@
+$kind: llm-request
+name: "AI: Put Mac to Sleep"
+description: |-
+  AI-powered request to put your Mac to sleep using Stream Deck.
+
+  This AI request is configured with Stream Deck MCP tools and will:
+  1. Get the list of executable Stream Deck actions
+  2. Find the sleep action
+  3. Execute it to put your Mac to sleep
+
+  **Configured Tools:**
+  - streamdeck__get_executable_actions: Discover available buttons
+  - streamdeck__execute_action: Execute the sleep button
+
+  **How it works:**
+  The AI agent will automatically find the correct action ID and execute it.
+  You can modify the prompt to execute different actions or perform other
+  Stream Deck operations.
+
+  **Warning:** This will put your Mac to sleep when executed!
+url: https://api.openai.com/v1/chat/completions
+config:
+  model: gpt-4o
+  provider: openai
+settings:
+  streamResponse: true
+userPrompts:
+  - id: 5cb388ed-9f27-468a-a52b-9d9e08920b1f
+    value: Put my Mac to sleep using the Stream Deck
+    timestamp: 1788965847973
+    active: true
+    contentType: text
+mcpConfig: |-
+  [
+    {
+      "name": "MCP Server@latest",
+      "config": {
+        "command": "npx",
+        "args": [
+          "--yes",
+          "@elgato/mcp-server@latest"
+        ]
+      },
+      "enabled": true,
+      "disabledTools": []
+    }
+  ]
+enabledTools:
+  - streamdeck__get_executable_actions
+  - streamdeck__execute_action
+auth:
+  type: bearer
+  credentials:
+    token: "{{vault:OPEN_AI_KEY}}"
+order: 9000

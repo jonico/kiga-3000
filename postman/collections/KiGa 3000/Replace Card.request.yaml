@@ -1,0 +1,52 @@
+$kind: http-request
+description: |-
+  Replaces the writable fields of the card created by Create Card.
+
+  "Replace" in the CardDraft sense rather than the HTTP-PUT-replaces-the-whole-resource
+  sense: the columns this API cannot see are left exactly as they are. Overwriting a
+  child's health record with defaults because it was absent from a request body would
+  be data loss dressed up as protocol correctness.
+
+  The geburtsdatum is sent in ISO form on purpose. DateConversion parses both
+  dd.MM.yyyy and the MySQL uuuu-MM-dd form, so refusing ISO would be gratuitous - but
+  the entity's contract is that its date attributes are always German display format,
+  so the server normalises rather than storing what it was handed. The assertion below
+  is what pins that down.
+url: "{{base_url}}/api/cards/{{created_card_id}}"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "gruppe": 4,
+      "vorname": "Jörg",
+      "nachname": "Vogtländer-Roßberg",
+      "geburtsdatum": "2018-05-06",
+      "eintritt": "01.09.2021"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 200", () => pm.response.to.have.status(200));
+
+      const card = pm.response.json();
+
+      pm.test("Response is the updated card, same six-field shape", () =>
+        pm.expect(Object.keys(card).sort()).to.eql(
+          ["eintritt", "geburtsdatum", "gruppe", "id", "nachname", "vorname"]));
+
+      pm.test("The id is the one from the URL, not a new card", () =>
+        pm.expect(String(card.id)).to.eql(
+          String(pm.collectionVariables.get("created_card_id"))));
+
+      pm.test("The changed fields took effect", () => {
+        pm.expect(card.nachname).to.eql("Vogtländer-Roßberg");
+        pm.expect(card.gruppe).to.eql(4);
+      });
+
+      pm.test("An ISO date is normalised to German display format", () =>
+        pm.expect(card.geburtsdatum).to.eql("06.05.2018"));
+    language: text/javascript
+order: 7000

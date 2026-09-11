@@ -6,3 +6,19 @@ bin/
 .idea/
 *.iml
 .DS_Store
+
+# Scratch the Postman dataset engine materialises under a dataset's data_dir
+# (.resources): sqlite caches, the daemon log, and a per-run UUID directory. All of it
+# is rebuilt on every `postman collection run --iteration-data-dataset`, so it is build
+# output rather than data.
+#
+# Two deliberate limits on how wide this goes:
+#   - Scoped to postman/datasets/**. Collections keep a tracked
+#     .resources/definition.yaml, so ignoring .resources/ globally would drop all three
+#     collection definitions from the repo.
+#   - Matches only the engine's own artefacts, not .resources/ wholesale. A datasource
+#     added without --ref-only has its CSV/JSON copied in here, and that copy is real
+#     data that must stay tracked.
+postman/datasets/**/.resources/*.db
+postman/datasets/**/.resources/*.log
+postman/datasets/**/.resources/*/

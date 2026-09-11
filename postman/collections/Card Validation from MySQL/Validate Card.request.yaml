@@ -1,0 +1,57 @@
+$kind: http-request
+description: |-
+  Validates that a card from the MySQL database exists in the REST API and has matching data.
+
+  This request should be run with a data source that provides:
+  - id: The card ID to validate
+  - vorname: Expected first name
+  - nachname: Expected last name
+  - gruppe: Expected group name
+
+  The test script validates:
+  - Response status is 200
+  - Card ID matches the database
+  - Card name matches the database
+url: "{{base_url}}/api/cards/{{id}}"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      // Test: Response status should be 200
+      pm.test("Status code is 200", function () {
+          pm.response.to.have.status(200);
+      });
+
+      // Parse response
+      const response = pm.response.json();
+
+      // Get expected values from data source (iteration data)
+      const expectedId = pm.iterationData.get("id");
+      const expectedVorname = pm.iterationData.get("vorname");
+      const expectedNachname = pm.iterationData.get("nachname");
+      const expectedGruppe = pm.iterationData.get("gruppe");
+
+      // Test: Card ID matches
+      pm.test("Card ID matches database", function () {
+          pm.expect(response.id).to.eql(expectedId);
+      });
+
+      // Test: Card first name matches
+      pm.test("Card first name matches database", function () {
+          pm.expect(response.vorname).to.eql(expectedVorname);
+      });
+
+      // Test: Card last name matches
+      pm.test("Card last name matches database", function () {
+          pm.expect(response.nachname).to.eql(expectedNachname);
+      });
+
+      // Test: Card group matches (convert to number for comparison)
+      pm.test("Card group matches database", function () {
+          pm.expect(response.gruppe).to.eql(Number(expectedGruppe));
+      });
+
+      // Log validation result
+      console.log(`✓ Validated card ${expectedId}: ${expectedVorname} ${expectedNachname} (${expectedGruppe})`);
+    language: text/javascript
+order: 1000

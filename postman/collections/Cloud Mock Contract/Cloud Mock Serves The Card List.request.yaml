@@ -1,0 +1,38 @@
+$kind: http-request
+description: |-
+  The list endpoint, which is where a leak of the withheld columns would show up across
+  every row rather than one.
+url: "{{base_url}}/api/cards"
+method: GET
+headers:
+  - key: x-mock-scenario
+    value: default
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 200", () => pm.response.to.have.status(200));
+
+      const cards = pm.response.json();
+
+      pm.test("Returns a non-empty array", () => {
+        pm.expect(cards).to.be.an("array");
+        pm.expect(cards.length).to.be.above(0);
+      });
+
+      pm.test("Every row exposes exactly the six CardSummary fields", () =>
+        cards.forEach((c) => pm.expect(Object.keys(c).sort()).to.eql(
+          ["eintritt", "geburtsdatum", "gruppe", "id", "nachname", "vorname"])));
+
+      pm.test("No withheld column appears in any row", () => {
+        const body = pm.response.text();
+        ["religion", "impfung", "gesundheit", "krankenkasse", "arztort", "staat"]
+          .forEach((f) => pm.expect(body).to.not.include(`"${f}"`));
+      });
+
+      pm.test("Response carries no real-person data from the private fixture", () => {
+        const body = pm.response.text();
+        ["Nicolai", "Däubler", "Seyther"].forEach((n) =>
+          pm.expect(body, `published mock leaked "${n}"`).to.not.include(n));
+      });
+    language: text/javascript
+order: 2000

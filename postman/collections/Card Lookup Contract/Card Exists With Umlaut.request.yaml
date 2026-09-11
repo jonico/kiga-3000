@@ -1,0 +1,48 @@
+$kind: http-request
+description: |-
+  Existence plus encoding, for whichever card the previous request identified as having
+  a non-ASCII name.
+
+  Two things are checked that a shape assertion would miss. The single-card projection
+  must return byte-identical strings to the list projection, so an encoding bug in
+  either path shows up as a mismatch rather than as two consistently-wrong answers. And
+  the value must still contain non-ASCII and must not contain the mojibake signature
+  that UTF-8 read as Latin-1 produces, which is what a naive equality check against a
+  hardcoded name used to catch by accident.
+url: "{{base_url}}/api/cards/{{umlaut_id}}"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      const expectedId = pm.collectionVariables.get("umlaut_id");
+
+      pm.test("Preceding request supplied a card id", () => {
+        pm.expect(expectedId, "umlaut_id was never set — see the previous request")
+          .to.be.a("string").and.not.empty;
+      });
+
+      pm.test("Status is 200", () => pm.response.to.have.status(200));
+
+      const card = pm.response.json();
+
+      pm.test("id matches the discovered card", () =>
+        pm.expect(card.id).to.eql(Number(expectedId)));
+
+      pm.test("Detail response matches the list response byte for byte", () => {
+        pm.expect(card.vorname).to.eql(pm.collectionVariables.get("umlaut_vorname"));
+        pm.expect(card.nachname).to.eql(pm.collectionVariables.get("umlaut_nachname"));
+      });
+
+      pm.test("Name still carries non-ASCII characters", () =>
+        pm.expect(/[^\x20-\x7E]/.test(card.vorname + card.nachname)).to.be.true);
+
+      pm.test("Name is not mojibake", () => {
+        const name = card.vorname + card.nachname;
+        // "Ã" and "Â" are what UTF-8 bytes look like when decoded as Latin-1, and the
+        // replacement character is what a failed decode leaves behind.
+        pm.expect(name).to.not.include("Ã");
+        pm.expect(name).to.not.include("Â");
+        pm.expect(name).to.not.include("�");
+      });
+    language: text/javascript
+order: 2000

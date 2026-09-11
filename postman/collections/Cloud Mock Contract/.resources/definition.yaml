@@ -1,0 +1,23 @@
+$kind: collection
+description: |-
+  Contract tests for the two DEPLOYED cloud mocks, driven by hardcoded ids and no
+  iteration data.
+
+  Every request sends `x-mock-scenario: default`. That header is not optional here: the
+  mocks' own default scenarios answer from a dataset through pm.datasets, which is
+  local-mock only, so without the header every data-serving endpoint returns 500. The
+  header pins the run to the spec-derived `default` scenario instead, which needs no
+  dataset and therefore does work in the cloud.
+
+  What that scenario can and cannot do shapes the assertions below. It carries one
+  canned example per response, so GET /api/cards/{id} answers with the same card for
+  every id. Asserting a particular card per id would be meaningless; asserting the
+  contract - status codes, error-body shape, the exposed field set, the read-only 405 -
+  is not, and that is what a consumer integrating against a published mock actually
+  depends on.
+
+  Point it at either deployment by overriding base_url:
+    --env-var base_url=https://kiga-3000-api-mock-008fa0.mock.automotive-demo.postman.dev
+    --env-var base_url=https://kiga-3000-api-mock-mysql-backed-54468c.mock.automotive-demo.postman.dev
+variables:
+  base_url: https://kiga-3000-api-mock-008fa0.mock.automotive-demo.postman.dev
