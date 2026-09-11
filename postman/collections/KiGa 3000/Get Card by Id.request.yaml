@@ -2,7 +2,7 @@ $kind: http-request
 description: |
   Example request for /api/cards/{id}.
   The id must be numeric; unknown ids return 404.
-url: http://127.0.0.1:8080/api/cards/2
+url: "{{base_url}}/api/cards/2"
 method: GET
 scripts:
   - type: afterResponse

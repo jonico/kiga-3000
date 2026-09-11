@@ -1,6 +1,6 @@
 $kind: http-request
 description: 'Returns 200 with {"status":"ok"}. Response content type: application/json; charset=utf-8.'
-url: http://127.0.0.1:8080/api/health
+url: "{{base_url}}/api/health"
 method: GET
 scripts:
   - type: afterResponse

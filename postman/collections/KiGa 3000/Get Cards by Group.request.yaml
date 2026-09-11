@@ -3,7 +3,7 @@ description: |
   Example request for /api/groups/{gruppe}/cards.
   The group path segment must be numeric; invalid numeric values outside 0..255
   return 404.
-url: http://127.0.0.1:8080/api/groups/2/cards
+url: "{{base_url}}/api/groups/2/cards"
 method: GET
 scripts:
   - type: afterResponse

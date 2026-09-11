@@ -2,7 +2,7 @@ $kind: http-request
 description: |
   Demonstrates UTF-8 output and JSON escaping for quotes and backslashes.
   The backend preserves German umlauts and escapes control characters as needed.
-url: http://127.0.0.1:8080/api/cards/4
+url: "{{base_url}}/api/cards/4"
 method: GET
 scripts:
   - type: afterResponse

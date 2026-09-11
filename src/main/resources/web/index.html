@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<!--
+  The KiGa 3000 web interface.
+
+  Plain HTML, CSS and JavaScript on purpose. The API it drives has no dependencies
+  beyond the JDK, and putting a framework and a build step in front of six fields would
+  have cost more than the application it is attached to. It is served from inside the
+  jar by KigaApiServer, so there is nothing to install and nothing to keep in sync.
+
+  German labels, because the application, its identifiers and its users are German.
+-->
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>KiGa 3000 &middot; Karteikarten</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header class="topbar">
+  <h1>KiGa 3000</h1>
+  <p class="subtitle">Karteikarten &ndash; Weboberfl&auml;che</p>
+  <span id="health" class="badge badge-unknown" title="Zustand der Schnittstelle">
+    pr&uuml;fe&nbsp;&hellip;
+  </span>
+</header>
+
+<main>
+  <!--
+    Stated in the interface rather than only in the code, because a user looking at a
+    form with six fields would otherwise reasonably assume the other 33 columns were
+    simply missing.
+  -->
+  <p class="notice">
+    Diese Oberfl&auml;che zeigt und &auml;ndert ausschlie&szlig;lich die sechs Felder der
+    Kurz&uuml;bersicht. Religion, Staatsangeh&ouml;rigkeit, Impfungen, Krankheiten,
+    Gesundheitshinweise, Arzt, Krankenkasse, Kontakte und Freitextfelder sind hier weder
+    lesbar noch &auml;nderbar &ndash; sie sind besondere personenbezogene Daten
+    (Art.&nbsp;9 DSGVO) und bleiben dem Desktop-Programm vorbehalten.
+    Der Server ist nur &uuml;ber 127.0.0.1 erreichbar.
+  </p>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Karteikarten</h2>
+      <div class="controls">
+        <label for="gruppe-filter">Gruppe</label>
+        <select id="gruppe-filter">
+          <option value="">alle</option>
+          <option value="1">1</option>
+          <option value="2">2</option>
+          <option value="3">3</option>
+          <option value="4">4</option>
+          <option value="5">5</option>
+          <option value="6">6</option>
+          <option value="7">7</option>
+          <option value="8">8</option>
+          <option value="9">9 (Aufbewahrung)</option>
+        </select>
+        <label for="suche">Suche</label>
+        <input id="suche" type="search" placeholder="Name" autocomplete="off">
+        <button id="neu" type="button" class="primary">Neue Karte</button>
+      </div>
+    </div>
+
+    <table id="cards">
+      <thead>
+        <tr>
+          <th scope="col" class="num">Nr.</th>
+          <th scope="col" class="num">Gruppe</th>
+          <th scope="col">Vorname</th>
+          <th scope="col">Nachname</th>
+          <th scope="col">Geburtsdatum</th>
+          <th scope="col">Eintritt</th>
+          <th scope="col"><span class="visually-hidden">Aktionen</span></th>
+        </tr>
+      </thead>
+      <tbody id="cards-body"></tbody>
+    </table>
+
+    <p id="empty" class="empty" hidden>Keine Karteikarten gefunden.</p>
+    <p id="count" class="count" aria-live="polite"></p>
+  </section>
+</main>
+
+<!--
+  A native <dialog>, so focus trapping and Escape come from the browser rather than
+  from hand-written JavaScript that would get them subtly wrong.
+-->
+<dialog id="editor">
+  <form id="editor-form" method="dialog">
+    <h2 id="editor-title">Neue Karteikarte</h2>
+
+    <div class="field">
+      <label for="f-gruppe">Gruppe</label>
+      <select id="f-gruppe" name="gruppe" required>
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+        <option value="5">5</option>
+        <option value="6">6</option>
+        <option value="7">7</option>
+        <option value="8">8</option>
+        <option value="9">9 (Aufbewahrung)</option>
+      </select>
+    </div>
+
+    <div class="field">
+      <label for="f-vorname">Vorname</label>
+      <input id="f-vorname" name="vorname" type="text" maxlength="50" required>
+    </div>
+
+    <div class="field">
+      <label for="f-nachname">Nachname</label>
+      <input id="f-nachname" name="nachname" type="text" maxlength="50" required>
+    </div>
+
+    <div class="field">
+      <label for="f-geburtsdatum">Geburtsdatum</label>
+      <!-- Text rather than type=date: the API speaks the German display format the
+           desktop client uses, and a native date picker would submit ISO. -->
+      <input id="f-geburtsdatum" name="geburtsdatum" type="text"
+             placeholder="TT.MM.JJJJ" pattern="\d{2}\.\d{2}\.\d{4}"
+             title="Format TT.MM.JJJJ, z. B. 11.03.2020">
+    </div>
+
+    <div class="field">
+      <label for="f-eintritt">Eintritt</label>
+      <input id="f-eintritt" name="eintritt" type="text"
+             placeholder="TT.MM.JJJJ" pattern="\d{2}\.\d{2}\.\d{4}"
+             title="Format TT.MM.JJJJ, z. B. 01.09.2023">
+    </div>
+
+    <p id="editor-error" class="error" hidden></p>
+
+    <div class="actions">
+      <button type="button" id="abbrechen">Abbrechen</button>
+      <button type="submit" class="primary" id="speichern">Speichern</button>
+    </div>
+  </form>
+</dialog>
+
+<div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+<script src="/app.js"></script>
+</body>
+</html>

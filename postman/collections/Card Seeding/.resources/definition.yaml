@@ -1,0 +1,28 @@
+$kind: collection
+description: |-
+  Seeds additional children into the card index through the write API, one per
+  iteration of a data file.
+
+  This is the collection that turns the new POST endpoint into something useful: the
+  17 demo records in db/seed.sql arrive through SQL, which means the write path itself
+  is never exercised by seeding. Driving it from HTTP instead means every seeded card
+  has been through JSON parsing, field-name validation, date normalisation and the
+  entity's column widths - so a seeding run that passes is also evidence the endpoint
+  works, and a schema change that breaks writes breaks seeding loudly.
+
+  All names here are invented. The repository's first section of db/seed.sql previously
+  carried the details of real children and was replaced for publication; anything added
+  later has to hold that line. The set deliberately includes umlauts, an eszett, a
+  Turkish dotted/dotless i, and a French accent, because the source files are declared
+  ISO-8859-1 and the API promises UTF-8 - names are exactly where that gets tested.
+
+  Run it with the data file, against a running API:
+
+    postman collection run "postman/collections/Card Seeding" \
+      -d postman/datafiles/new-cards.json
+
+  Unlike the KiGa 3000 collection, this one does NOT clean up after itself: seeding
+  that deleted its own rows would be pointless. Every run adds 12 more children, so
+  re-running it inflates the database on purpose.
+variables:
+  base_url: http://127.0.0.1:8080

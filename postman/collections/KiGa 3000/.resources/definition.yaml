@@ -1,2 +1,19 @@
 $kind: collection
-description: "Read-only KiGa 3000 backend API. GET endpoints: /api/health, /api/cards, /api/cards/{id}, /api/groups/{gruppe}/cards. Non-GET returns 405 with Allow: GET."
+description: |-
+  The KiGa 3000 backend API.
+
+  Reads: GET /api/health, /api/cards, /api/cards/{id}, /api/groups/{gruppe}/cards.
+  Writes: POST /api/cards, PUT /api/cards/{id}, DELETE /api/cards/{id}. Anything else
+  returns 405 with an Allow header listing what is supported.
+
+  Writes are confined to the six fields of the summary projection, which is the same
+  set a read exposes. Religion, nationality, vaccination history, illnesses, health
+  notes, doctor, insurer, contacts, addresses and the free-text fields can neither be
+  read nor written here - they are special-category personal data under GDPR Article 9
+  and remain desktop-only. The server is bound to 127.0.0.1, which is what stands in
+  for the authentication story that does not exist yet.
+
+  Create Card, Replace Card and Delete Card form a lifecycle that cleans up after
+  itself, so the collection can be run repeatedly against a seeded database.
+variables:
+  base_url: http://127.0.0.1:8080

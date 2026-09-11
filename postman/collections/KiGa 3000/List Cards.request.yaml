@@ -3,7 +3,7 @@ description: |
   Returns every card summary in repository order.
   The summary intentionally omits sensitive fields such as religion, health notes,
   vaccinations, illnesses, doctor and insurer data.
-url: http://127.0.0.1:8080/api/cards
+url: "{{base_url}}/api/cards"
 method: GET
 scripts:
   - type: afterResponse
