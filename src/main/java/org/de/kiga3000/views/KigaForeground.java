@@ -52,9 +52,8 @@ public final class KigaForeground {
         // Must run on the Event Dispatch Thread, and AFTER the pending window events.
         //
         // The first version of this called straight through on the calling thread,
-        // which is the main thread, immediately after setVisible(true) and
-        // setExtendedState(MAXIMIZED_BOTH). It had no effect: MAXIMIZED_BOTH re-maps
-        // the window, so the activation request raced the window actually appearing.
+        // which is the main thread, immediately after setVisible(true). It had no
+        // effect: the activation request raced the window actually being mapped.
         // Queueing it means it runs once those events have been processed.
         // Always deferred, even when already on the EDT: the point is to run after the
         // queued window events, not merely to be on the right thread.
@@ -68,8 +67,8 @@ public final class KigaForeground {
                 Desktop desktop = Desktop.getDesktop();
                 if (desktop.isSupported(Desktop.Action.APP_REQUEST_FOREGROUND)) {
                     // true, not false: false only considers the application's foremost
-                    // window, and right after a MAXIMIZED_BOTH re-map there may not be
-                    // a settled foremost window to act on.
+                    // window, and immediately after the frame is mapped there may not
+                    // be a settled foremost window to act on.
                     desktop.requestForeground(true);
                 }
             }

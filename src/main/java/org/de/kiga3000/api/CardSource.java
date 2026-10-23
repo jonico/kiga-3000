@@ -22,4 +22,35 @@ public interface CardSource {
 
     /** Cards in one Kindergarten group. */
     List<CardSummary> byGruppe(byte gruppe);
+
+    // ------------------------------------------------------------------------ writes
+
+    /**
+     * Creates a card from the writable projection.
+     *
+     * <p>Only the {@link CardDraft} fields are set; every other column keeps the
+     * entity's default. The sensitive columns are therefore never populated over HTTP.
+     *
+     * @return the created card, including the id the database assigned
+     */
+    CardSummary create(CardDraft draft);
+
+    /**
+     * Replaces the writable fields of an existing card.
+     *
+     * <p>A replace in the {@link CardDraft} sense, not in the HTTP-PUT-replaces-the-whole
+     * -resource sense: the 33 columns this API cannot see are left exactly as they are.
+     * Overwriting a child's health record with defaults because it was absent from a
+     * request body would be data loss dressed up as protocol correctness.
+     *
+     * @return the updated card, or empty when no card has that id
+     */
+    Optional<CardSummary> replace(int id, CardDraft draft);
+
+    /**
+     * Deletes a card.
+     *
+     * @return false when no card has that id
+     */
+    boolean delete(int id);
 }

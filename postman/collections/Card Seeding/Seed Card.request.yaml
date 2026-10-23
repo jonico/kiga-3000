@@ -1,0 +1,79 @@
+$kind: http-request
+description: |-
+  Creates one card per iteration from the data file.
+
+  The body is built entirely from iteration variables, so the data file is the single
+  source of truth for what gets seeded and the request itself carries no children's
+  details at all.
+
+  Only the five writable fields are sent. There is nowhere in this request to put a
+  religion, a vaccination history or a health note - not because the server would
+  accept them (it answers 400 and names the field), but because the seeding path
+  should not be the thing that teaches someone those columns are reachable over HTTP.
+url: "{{base_url}}/api/cards"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "gruppe": {{gruppe}},
+      "vorname": "{{vorname}}",
+      "nachname": "{{nachname}}",
+      "geburtsdatum": "{{geburtsdatum}}",
+      "eintritt": "{{eintritt}}"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      const sent = {
+        gruppe: Number(pm.iterationData.get("gruppe")),
+        vorname: pm.iterationData.get("vorname"),
+        nachname: pm.iterationData.get("nachname"),
+        geburtsdatum: pm.iterationData.get("geburtsdatum"),
+        eintritt: pm.iterationData.get("eintritt"),
+      };
+
+      pm.test(`201 Created for ${sent.vorname} ${sent.nachname}`, () =>
+        pm.response.to.have.status(201));
+
+      // Everything below would throw on a non-201, and the failure above already says
+      // what went wrong; bail out rather than produce a cascade of confusing errors.
+      if (pm.response.code !== 201) {
+        return;
+      }
+
+      const card = pm.response.json();
+
+      pm.test("Location header points at the new card", () =>
+        pm.expect(pm.response.headers.get("Location")).to.eql(`/api/cards/${card.id}`));
+
+      pm.test("Response is the six-field summary, nothing widened", () =>
+        pm.expect(Object.keys(card).sort()).to.eql(
+          ["eintritt", "geburtsdatum", "gruppe", "id", "nachname", "vorname"]));
+
+      // The point of seeding over HTTP: the name that went in is the name that comes
+      // back, through UTF-8 and a varchar(50), for every character in the data file.
+      pm.test("Names survived the round trip byte for byte", () => {
+        pm.expect(card.vorname).to.eql(sent.vorname);
+        pm.expect(card.nachname).to.eql(sent.nachname);
+      });
+
+      pm.test("Group and dates were stored as sent", () => {
+        pm.expect(card.gruppe).to.eql(sent.gruppe);
+        pm.expect(card.geburtsdatum).to.eql(sent.geburtsdatum);
+        pm.expect(card.eintritt).to.eql(sent.eintritt);
+      });
+
+      pm.test("Dates are German dd.MM.yyyy, or empty for no date", () =>
+        pm.expect(card.geburtsdatum).to.match(/^(\d{2}\.\d{2}\.\d{4})?$/));
+
+      // A running tally, so the run summary says how many children were added.
+      const seeded = JSON.parse(pm.collectionVariables.get("seeded_ids") || "[]");
+      seeded.push(card.id);
+      pm.collectionVariables.set("seeded_ids", JSON.stringify(seeded));
+      console.log(`seeded ${sent.vorname} ${sent.nachname} as card ${card.id}`
+        + ` (${seeded.length} so far)`);
+    language: text/javascript
+order: 1000

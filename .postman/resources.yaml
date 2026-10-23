@@ -1,5 +1,21 @@
-workspace:
-  id: 85b4d006-0c62-47c2-aa67-fb5c53654c9e
 cloudResources:
   collections:
+    ../postman/collections/Card Lookup Contract: 50602431-962fe85f-7db7-4eb7-a658-17bdd66ff0c6
+    ../postman/collections/Card Seeding: 50602431-8bd24ecb-0c34-4eb7-84ed-46a13a587adf
+    ../postman/collections/Card Validation from MySQL: 50602431-6dc8ebc8-dd85-4ee5-8066-57e83732b740
+    ../postman/collections/Cloud Mock Contract: 50602431-6f6528d9-a9fd-464d-95a8-68700d04d345
     ../postman/collections/KiGa 3000: 50602431-eb9c82a4-a696-469f-ba0d-a56fc83a315b
+    ../postman/collections/Stream Deck MCP Control: 6aa174bb530359ffe176a394
+  datasets:
+    ../postman/datasets/Cards-Mock-Fixture/Cards-Mock-Fixture.dataset.yaml: f7537ad6-83a3-4c2d-b973-08f4b471dc49
+    ../postman/datasets/Cards-MySQL-Database/Cards-MySQL-Database.dataset.yaml: fe7a53b2-3ba1-492a-a819-d7df1d00ebe0
+  mocks:
+    ../postman/mocks/kiga-3000-api-mysql/config.yaml: ac9f28c1-fac5-41a4-8d1b-419e9761f3ca
+    ../postman/mocks/kiga-3000-api/config.yaml: 1fba62c4-516f-4dbc-b330-10043456465b
+  specs:
+    ../postman/specs/KiGa 3000 API.yaml: bfbd23a3-0d51-465a-87be-fc1a5acdea7e
+resourceNameMappings:
+  specs:
+    - ../postman/specs/KiGa 3000 API.yaml: KiGa 3000 API.yaml
+workspace:
+  id: 85b4d006-0c62-47c2-aa67-fb5c53654c9e

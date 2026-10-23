@@ -1,0 +1,56 @@
+$kind: http-request
+description: |-
+  Write path, step 1 of 6: create a card.
+
+  The writes in this suite form one lifecycle - create, read back, replace, read back,
+  delete, read back - sharing the new id through the `created_id` collection variable,
+  so they must run in order. The suite leaves the table as it found it: the card is
+  deleted again in step 5.
+
+  The name carries an umlaut and a hyphen, and the birth date is sent as ISO. The API
+  accepts either date form but stores and returns exactly one, dd.MM.yyyy, so the ISO
+  input coming back as a German date is the contract being pinned here.
+url: "{{base_url}}/api/cards"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "gruppe": 3,
+      "vorname": "Jörg",
+      "nachname": "Müller-Lüdenscheidt",
+      "geburtsdatum": "2019-03-05"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 201", () => pm.response.to.have.status(201));
+      if (pm.response.code !== 201) { return; }
+
+      const card = pm.response.json();
+      pm.collectionVariables.set("created_id", String(card.id));
+
+      pm.test("Location header points at the new card", () =>
+        pm.expect(pm.response.headers.get("Location")).to.eql(`/api/cards/${card.id}`));
+
+      pm.test("Response is the six-field summary, nothing widened", () =>
+        pm.expect(Object.keys(card).sort()).to.eql(["eintritt", "geburtsdatum", "gruppe", "id", "nachname", "vorname"]));
+
+      pm.test("id is assigned by the server, as a number", () =>
+        pm.expect(card.id).to.be.a("number").and.above(0));
+
+      pm.test("Name survived UTF-8 and the varchar(50) column", () => {
+        pm.expect(card.vorname).to.eql("Jörg");
+        pm.expect(card.nachname).to.eql("Müller-Lüdenscheidt");
+      });
+
+      pm.test("gruppe stored as sent", () => pm.expect(card.gruppe).to.eql(3));
+
+      pm.test("ISO input date is normalised to dd.MM.yyyy", () => {
+        pm.expect(card.geburtsdatum).to.eql("05.03.2019");
+        pm.expect(card.eintritt).to.eql("");
+      });
+    language: text/javascript
+order: 7000

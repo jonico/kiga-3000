@@ -1,0 +1,18 @@
+$kind: collection
+description: |-
+  Contract tests for the card API: GET /api/cards/{id} over cards that exist, ids that do
+  not and inputs that are not ids at all, then the write paths (POST, PUT, DELETE,
+  OPTIONS) as one create / read / replace / read / delete / read lifecycle plus the
+  rejections. Driven by hardcoded ids rather than iteration data. The write requests
+  share the new id through the created_id collection variable, so they must run in
+  order, and they delete what they create.
+
+  Deliberately free of iteration data: every request carries its own id, so the suite
+  says the same thing whatever the data source. That also lets it run unchanged against
+  either the real Java API or the MySQL-backed local mock, which is the point - the mock
+  is only faithful if the same contract holds against both.
+
+  Assertions check shape rather than specific people, so seeding more children does not
+  break the suite. The two exceptions are called out in the requests that make them.
+variables:
+  base_url: http://127.0.0.1:8080

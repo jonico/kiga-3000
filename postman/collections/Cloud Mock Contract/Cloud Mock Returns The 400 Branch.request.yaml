@@ -1,0 +1,42 @@
+$kind: http-request
+description: |-
+  The 400 branch, selected with `x-mock-response-code` rather than by sending a bad id.
+
+  Sending /api/cards/abc would be the obvious way to ask for this, and it does not work:
+  the spec-generated scenario performs no input validation, so it answers 200 with the
+  canned card whatever the path segment says. Validation lives only in the hand-written
+  local scenarios, and those cannot run in the cloud because they read a dataset.
+
+  So on a deployed mock the error branches are reached the documented way, by asking for
+  the status code. That still tests something real - that the published mock can produce
+  a well-formed error body matching the spec - it just does not test the routing logic,
+  which the deployment genuinely does not have.
+url: "{{base_url}}/api/cards/1"
+method: GET
+headers:
+  - key: x-mock-scenario
+    value: default
+  - key: x-mock-response-code
+    value: "400"
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 400 as requested", () => pm.response.to.have.status(400));
+
+      const body = pm.response.json();
+
+      pm.test("Error body has the uniform shape", () => {
+        pm.expect(Object.keys(body).sort()).to.eql(["error", "status"]);
+        pm.expect(body.status).to.eql(400);
+        pm.expect(body.error).to.be.a("string").and.not.empty;
+      });
+
+      pm.test("No card fields leak into an error response", () => {
+        pm.expect(body).to.not.have.property("vorname");
+        pm.expect(body).to.not.have.property("nachname");
+      });
+
+      pm.test("No stack trace reaches the client", () =>
+        pm.expect(body.error).to.not.match(/\bat [\w.$]+\(/));
+    language: text/javascript
+order: 3000

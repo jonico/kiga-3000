@@ -1,0 +1,23 @@
+$kind: http-request
+description: |-
+  A body that is not JSON is 400 with the uniform error shape, not a 500.
+url: "{{base_url}}/api/cards"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    { "gruppe": 1, "vorname":
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 400", () => pm.response.to.have.status(400));
+
+      pm.test("Error body has the uniform shape", () => {
+        const body = pm.response.json();
+        pm.expect(Object.keys(body).sort()).to.eql(["error", "status"]);
+        pm.expect(body.status).to.eql(pm.response.code);
+      });
+    language: text/javascript
+order: 8300

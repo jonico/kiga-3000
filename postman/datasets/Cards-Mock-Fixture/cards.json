@@ -1,0 +1,8 @@
+[
+  { "id": 1,  "gruppe": 1, "vorname": "Anna",      "nachname": "Musterkind", "geburtsdatum": "11.03.2020", "eintritt": "01.09.2023" },
+  { "id": 2,  "gruppe": 1, "vorname": "Ben",       "nachname": "Beispiel",   "geburtsdatum": "20.11.2020", "eintritt": "01.09.2023" },
+  { "id": 9,  "gruppe": 1, "vorname": "Mira",      "nachname": "Bergmann",   "geburtsdatum": "14.03.2020", "eintritt": "01.09.2023" },
+  { "id": 12, "gruppe": 2, "vorname": "Elias",     "nachname": "Roßberg",    "geburtsdatum": "08.02.2019", "eintritt": "01.09.2022" },
+  { "id": 13, "gruppe": 2, "vorname": "Yusuf",     "nachname": "Özdemir",    "geburtsdatum": "17.06.2020", "eintritt": "01.09.2023" },
+  { "id": 16, "gruppe": 3, "vorname": "Amelie",    "nachname": "Vogtländer", "geburtsdatum": "06.05.2018", "eintritt": "01.09.2021" }
+]

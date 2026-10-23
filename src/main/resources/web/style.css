@@ -1,0 +1,323 @@
+/*
+ * KiGa 3000 web interface.
+ *
+ * One stylesheet, no preprocessor, no reset library. Light and dark both come from
+ * one set of custom properties so the interface follows the desktop's appearance
+ * setting rather than insisting on its own.
+ */
+
+:root {
+  --bg: #f5f6f8;
+  --surface: #ffffff;
+  --surface-alt: #eef0f4;
+  --border: #d6dae1;
+  --text: #1d2430;
+  --text-muted: #5c6675;
+  --accent: #2f6f4f;
+  --accent-text: #ffffff;
+  --danger: #9b2c2c;
+  --notice-bg: #fdf6e3;
+  --notice-border: #e3d6a8;
+  --radius: 8px;
+  --gap: 1rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14171c;
+    --surface: #1c2026;
+    --surface-alt: #23282f;
+    --border: #333a44;
+    --text: #e7eaee;
+    --text-muted: #9aa4b2;
+    --accent: #4d9c73;
+    --accent-text: #0e1216;
+    --danger: #e08585;
+    --notice-bg: #2a2620;
+    --notice-border: #4a412c;
+  }
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ------------------------------------------------------------------ top bar */
+
+.topbar {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.topbar h1 {
+  margin: 0;
+  font-size: 1.25rem;
+  letter-spacing: 0.01em;
+}
+
+.subtitle {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.badge {
+  margin-left: auto;
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text-muted);
+}
+
+.badge-ok {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.badge-down {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+/* -------------------------------------------------------------------- layout */
+
+main {
+  max-width: 70rem;
+  margin: 0 auto;
+  padding: 1.5rem;
+}
+
+.notice {
+  margin: 0 0 var(--gap);
+  padding: 0.8rem 1rem;
+  background: var(--notice-bg);
+  border: 1px solid var(--notice-border);
+  border-radius: var(--radius);
+  font-size: 0.875rem;
+  color: var(--text);
+}
+
+.panel {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.panel-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--gap);
+  padding: 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: auto;
+}
+
+.controls label {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* -------------------------------------------------------------------- table */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  padding: 0.55rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+}
+
+thead th {
+  background: var(--surface-alt);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+tbody tr:hover {
+  background: var(--surface-alt);
+}
+
+/* Right-aligned and tabular so ids and group numbers line up as columns. */
+.num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  width: 1%;
+  white-space: nowrap;
+}
+
+td.row-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.empty,
+.count {
+  padding: 1rem;
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.count {
+  border-top: 1px solid var(--border);
+}
+
+/* ------------------------------------------------------------------ controls */
+
+button,
+input,
+select {
+  font: inherit;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.35rem 0.6rem;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--surface-alt);
+}
+
+button.primary {
+  background: var(--accent);
+  color: var(--accent-text);
+  border-color: transparent;
+  font-weight: 600;
+}
+
+button.primary:hover {
+  filter: brightness(1.08);
+}
+
+button.link {
+  background: none;
+  border: none;
+  padding: 0.2rem 0.4rem;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
+button.link.danger {
+  color: var(--danger);
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* -------------------------------------------------------------------- dialog */
+
+dialog {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  padding: 1.25rem;
+  width: min(28rem, calc(100vw - 2rem));
+}
+
+dialog::backdrop {
+  background: rgb(0 0 0 / 45%);
+}
+
+dialog h2 {
+  margin: 0 0 var(--gap);
+  font-size: 1.05rem;
+}
+
+.field {
+  display: grid;
+  grid-template-columns: 8rem 1fr;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.field label {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: var(--gap);
+}
+
+.error {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0.7rem;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--danger);
+  font-size: 0.85rem;
+}
+
+/* --------------------------------------------------------------------- toast */
+
+.toast {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  background: var(--text);
+  color: var(--bg);
+  font-size: 0.875rem;
+  box-shadow: 0 4px 16px rgb(0 0 0 / 25%);
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

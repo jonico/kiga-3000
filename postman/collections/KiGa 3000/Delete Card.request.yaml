@@ -1,0 +1,45 @@
+$kind: http-request
+description: |-
+  Deletes the card created earlier in the run, and checks it is really gone.
+
+  This is what keeps the collection idempotent: Create Card, Replace Card and Delete
+  Card together leave the database exactly as they found it, so the suite can be run
+  against a seeded development database repeatedly without inflating it.
+
+  A 204 with no body rather than a 200 with a tombstone: there is nothing useful to
+  say about a card that no longer exists.
+url: "{{base_url}}/api/cards/{{created_card_id}}"
+method: DELETE
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 204 No Content", () => pm.response.to.have.status(204));
+
+      pm.test("204 carries no body", () =>
+        pm.expect(pm.response.text()).to.be.empty);
+
+      // The delete is only believable if the card is actually unreachable afterwards,
+      // so verify rather than trust the status code.
+      const id = pm.collectionVariables.get("created_card_id");
+      pm.sendRequest(`${pm.collectionVariables.get("base_url")}/api/cards/${id}`,
+        (err, res) => {
+          pm.test("The card is gone afterwards", () => {
+            pm.expect(err).to.equal(null);
+            pm.expect(res.code).to.eql(404);
+          });
+
+          pm.test("Deleting it again is a 404, not a silent success", () => {
+            pm.sendRequest({
+              url: `${pm.collectionVariables.get("base_url")}/api/cards/${id}`,
+              method: "DELETE",
+            }, (secondErr, secondRes) => {
+              pm.expect(secondErr).to.equal(null);
+              pm.expect(secondRes.code).to.eql(404);
+            });
+          });
+        });
+
+      pm.collectionVariables.unset("created_card_id");
+      pm.collectionVariables.unset("created_card_location");
+    language: text/javascript
+order: 8000

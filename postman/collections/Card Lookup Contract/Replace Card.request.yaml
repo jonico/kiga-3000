@@ -1,0 +1,42 @@
+$kind: http-request
+description: |-
+  Write path, step 3 of 6: PUT replaces the whole writable representation.
+
+  Every writable field is sent, with a different value each. The date goes in as
+  dd.MM.yyyy this time, so both input forms are covered across create and replace.
+  The id comes from the URL and does not change.
+url: "{{base_url}}/api/cards/{{created_id}}"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "gruppe": 9,
+      "vorname": "Zoë",
+      "nachname": "Straße",
+      "geburtsdatum": "11.08.2018",
+      "eintritt": "01.09.2021"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 200", () => pm.response.to.have.status(200));
+      const card = pm.response.json();
+
+      pm.test("Response is the six-field summary", () =>
+        pm.expect(Object.keys(card).sort()).to.eql(["eintritt", "geburtsdatum", "gruppe", "id", "nachname", "vorname"]));
+
+      pm.test("id is unchanged", () =>
+        pm.expect(String(card.id)).to.eql(pm.collectionVariables.get("created_id")));
+
+      pm.test("Every field was replaced", () => {
+        pm.expect(card.vorname).to.eql("Zoë");
+        pm.expect(card.nachname).to.eql("Straße");
+        pm.expect(card.gruppe).to.eql(9);
+        pm.expect(card.geburtsdatum).to.eql("11.08.2018");
+        pm.expect(card.eintritt).to.eql("01.09.2021");
+      });
+    language: text/javascript
+order: 7200

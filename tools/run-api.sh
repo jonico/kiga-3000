@@ -1,21 +1,29 @@
 #!/bin/bash
-# Start the read-only HTTP API.
+# Start the HTTP API and the web interface.
 #
 #   ./tools/run-api.sh            # port 8080
 #   ./tools/run-api.sh 18080      # a different port
 #
 # Requires a running MySQL with the schema applied; see db/schema.sql.
-# Bound to 127.0.0.1 only, so it is not reachable from the network.
+# Bound to 127.0.0.1 only, so neither the API nor the web interface is reachable from
+# the network. That is what stands in for the authentication story that does not exist
+# yet, and it is the reason the write endpoints below are defensible at all.
 #
 # Endpoints:
-#   GET /api/health
-#   GET /api/cards
-#   GET /api/cards/{id}
-#   GET /api/groups/{n}/cards
+#   GET    /                      the web interface
+#   GET    /api/health
+#   GET    /api/cards
+#   GET    /api/cards/{id}
+#   GET    /api/groups/{n}/cards
+#   POST   /api/cards             create
+#   PUT    /api/cards/{id}        replace the writable fields
+#   DELETE /api/cards/{id}        delete
 #
-# Read-only by design: anything other than GET returns 405. The response projection
-# deliberately omits religion, nationality, health notes, vaccinations, doctor, insurer,
-# contacts and free-text fields - see CardSummary for why.
+# Reads and writes cover the SAME six fields and no others. Religion, nationality,
+# health notes, vaccinations, illnesses, doctor, insurer, contacts, addresses and the
+# free-text fields can neither be read nor written here - see CardSummary and CardDraft
+# for why. A body naming one of them gets a 400 that says so rather than being ignored.
+# PATCH is deliberately absent; anything unsupported returns 405 with an Allow header.
 set -euo pipefail
 
 cd "$(dirname "$0")/.."

@@ -1,0 +1,27 @@
+$kind: mcp-request
+description: |-
+  Get only AI-ready Stream Deck actions.
+
+  Filters the action list to show only actions that are marked as AI-ready,
+  which are suitable for AI agent automation and tool calling.
+
+  **Use Cases:**
+  - Find actions that work well with AI agents
+  - Discover automatable Stream Deck functions
+  - Build AI-powered Stream Deck workflows
+
+  **Parameter:**
+  - OnlyAiReady: true (filters to AI-compatible actions only)
+transport: stdio
+command: npx --yes @elgato/mcp-server@latest
+message: |-
+  {
+    "method": "tools/call",
+    "params": {
+      "name": "streamdeck__list_actions",
+      "arguments": {
+        "OnlyAiReady": true
+      }
+    }
+  }
+order: 3000

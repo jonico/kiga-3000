@@ -1,14 +1,12 @@
 $kind: http-request
-name: Health
 description: 'Returns 200 with {"status":"ok"}. Response content type: application/json; charset=utf-8.'
-url: http://127.0.0.1:8080/api/health
+url: "{{base_url}}/api/health"
 method: GET
-order: 10
 scripts:
   - type: afterResponse
     code: |-
       const response = pm.response.json();
-      
+
       // Prepare data with computed emoji
       const data = {
         status: response.status,
@@ -16,7 +14,7 @@ scripts:
         api: response.api || '',
         emoji: response.status === 'ok' ? '✅' : '❌'
       };
-      
+
       const template = `
       <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: var(--spacing-l); color: var(--content-color-primary);">
         <h1 style="color: var(--content-color-primary); margin-bottom: var(--spacing-l);">Health Check</h1>
@@ -35,6 +33,7 @@ scripts:
         </div>
       </div>
       `;
-      
+
       pm.visualizer.set(template, data);
     language: text/javascript
+order: 1000

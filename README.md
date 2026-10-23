@@ -399,7 +399,7 @@ The 2006 project had two test classes and **neither asserted anything** — both
 to stdout and caught `ParseException` by printing `Mist`. That is precisely how the
 date handling could be completely broken for a decade while the suite stayed green.
 
-Now 65 tests, none requiring a database or a display. Notably `KarteikarteImplTest`
+Now 107 tests, none requiring a database or a display. Notably `KarteikarteImplTest`
 reflectively round-trips every accessor pair with a value unique per field, so crossed
 wiring — bug 2's shape — shows up immediately.
 
@@ -573,7 +573,7 @@ that the ORM introduction happened to create, and it flattered both arms equally
 
 ---
 
-## The new-stack feature: a read-only HTTP API
+## The new-stack feature: an HTTP API and a web interface
 
 The brief asked for functionality that is only possible on the newer stack. Three
 candidates appeared along the way, and it is worth being clear about which is which.
@@ -589,12 +589,16 @@ candidates appeared along the way, and it is worth being clear about which is wh
   application on macOS, and `toFront()` only reorders windows within an app that is
   already frontmost.
 
-**The substantial one** is `org.de.kiga3000.api` — a read-only HTTP API over the card
-index. See `tools/run-api.sh`.
+**The substantial one** is `org.de.kiga3000.api` — an HTTP API over the card index, and
+a web interface served alongside it. See `tools/run-api.sh`.
 
 ```
-GET /api/health              GET /api/cards
-GET /api/cards/{id}          GET /api/groups/{n}/cards
+GET    /                     the web interface
+GET    /api/health           GET /api/cards
+GET    /api/cards/{id}       GET /api/groups/{n}/cards
+POST   /api/cards            create
+PUT    /api/cards/{id}       replace the writable fields
+DELETE /api/cards/{id}       delete
 ```
 
 Why this and not, say, packaging the app as a native bundle with `jpackage` (also
@@ -616,21 +620,79 @@ What makes it new-stack rather than merely new code:
 
 ### Limits, deliberately
 
-This is data about children, so the constraints are the interesting part:
+This is data about children, so the constraints are the interesting part.
 
-- **Read-only.** Anything other than `GET` returns 405 with `Allow: GET`, not a silent
-  404. A write API needs an authorisation model first.
+The API was read-only when it was first written, and the protection was simply that
+nothing could be written. Writes exist now, so that argument no longer applies and had
+to be replaced with a different one:
+
+- **The writable field set equals the readable field set.** `CardSummary` exposes id,
+  group, forename, surname, date of birth and entry date — what a group list would print
+  on paper anyway. `CardDraft` accepts the same five (id being server-assigned) and
+  nothing else. Religion, nationality, vaccination history, illnesses, health notes,
+  doctor, health insurer, contacts, addresses and free-text fields — special-category
+  personal data under GDPR Article 9 — can neither be read nor written over HTTP. A
+  write API whose input accepted the whole entity would let an unauthenticated caller
+  fill in a child's health record even though it could never read one back, which is
+  worse rather than better.
+
+  Two tests hold that line: one asserts each of those field names is absent from a
+  response, another asserts a body naming one is **refused**, and a third asserts the
+  two records' component lists are still identical. Widening either half alone breaks
+  the build.
+- **Unknown fields are refused, not ignored.** A body containing `religion` gets a 400
+  naming the field. Silently dropping it would leave the caller believing a health note
+  had been stored, which is the worse failure.
+- **`PATCH` is deliberately absent.** A partial update of a five-field projection buys
+  nothing, and the ambiguity over whether an omitted field means "leave it alone" or
+  "clear it" is exactly how a date of birth gets quietly erased. Unsupported methods
+  return 405 with an `Allow` header, not a silent 404.
 - **Loopback only.** Bound to `127.0.0.1`, never `0.0.0.0`; verified that a request to
-  the host's LAN address is refused.
-- **A narrow projection, because there is no authentication yet.** `CardSummary` exposes
-  id, group, forename, surname, date of birth and entry date — what a group list would
-  print on paper anyway. It withholds religion, nationality, vaccination history,
-  illnesses, health notes, doctor, health insurer, contacts, addresses and free-text
-  fields: special-category personal data under GDPR Article 9. **A test asserts each of
-  those field names is absent from the response**, so widening the projection breaks the
-  build and forces a deliberate decision.
+  the host's LAN address is refused. With no authentication, this is what makes the
+  write endpoints defensible, and it applies to the web interface too.
+- **Dates are validated at the boundary, then normalised.** Not politeness:
+  `DateStringConverter` maps an unparseable date to SQL `NULL` rather than failing a
+  flush, so without a check here a typo in a date of birth would be accepted and stored
+  as "no date". Both `dd.MM.yyyy` and ISO are accepted; only `dd.MM.yyyy` is ever
+  stored, because the entity's contract says its date attributes are in display format.
 - **Not started by the desktop application.** It has its own `main`, so running the Swing
   client never opens a socket.
+
+### The web interface
+
+`GET /` serves a small client for the same six fields: a sortable list, a group filter,
+a name search, and create/edit/delete. Plain HTML, CSS and vanilla JavaScript, packaged
+inside the jar — a framework and a build step in front of six fields would have cost
+more than the application it is attached to.
+
+Two details that are not arbitrary:
+
+- **Card data reaches the page only through `textContent`, never `innerHTML`.** The
+  mirror of `Json.string()` on the server: the names are user-entered German text and the
+  fixtures deliberately include one containing a quote and a backslash. Building rows by
+  string concatenation would turn that fixture into an injection.
+- **The page states what it withholds.** Someone looking at a form with five fields would
+  otherwise reasonably assume the rest of the card was missing rather than deliberately
+  out of reach. A test asserts the GDPR note and the loopback limit are both in the page.
+
+### Seeding through the API
+
+`postman/collections/Card Seeding` inserts additional children over HTTP, one per
+iteration of `postman/datafiles/new-cards.json`:
+
+```bash
+./tools/run-api.sh &
+postman collection run "postman/collections/Card Seeding" \
+  -d postman/datafiles/new-cards.json
+```
+
+The point is that `db/seed.sql` arrives through SQL and therefore never exercises the
+write path at all. Seeding over HTTP means every seeded card has been through JSON
+parsing, field-name validation, date normalisation and the column widths — so a passing
+seed run is also evidence the endpoint works, and a schema change that breaks writes
+breaks seeding loudly. The data file includes umlauts, an eszett, a Turkish dotless i
+and a French accent, because the source files are declared ISO-8859-1 while the API
+promises UTF-8, and names are where that gets tested. All of them are invented.
 
 No JSON library: Jackson would pull a dependency tree larger than the application, for
 six fields of two types. The hand-written writer escapes quotes, backslashes and control
@@ -759,15 +821,16 @@ Central. That is an entitlement boundary, not a versioning problem.
 │   └── trunk-head-src-lib/    the vendored dependency binaries the jars come from
 ├── lib/repo/                  project-local Maven repo for the 2004 Liquid L&F
 ├── src/main/java/org/de/kiga3000/
-│   ├── api/                   read-only HTTP API (virtual threads, records)
+│   ├── api/                   HTTP API (virtual threads, records)
 │   ├── control/               MVC controllers
 │   ├── conversion/            date conversion
 │   ├── data/                  the JPA entity and its date converter
 │   ├── database/              JPA repository + the JDBC queries that stayed
 │   ├── views/                 Swing
 │   └── KigaResources.java     classpath resource resolution
+├── src/main/resources/web/    the web interface, served from inside the jar
 └── tools/
-    ├── run-api.sh             start the HTTP API
+    ├── run-api.sh             start the HTTP API and the web interface
     ├── test-printing.sh       manual print check; takes a "legacy" argument
     ├── audit-delegating-accessors.py   finds crossed delegating getters/setters
     └── audit-view-wiring.py            finds crossed Swing component wiring
@@ -776,15 +839,21 @@ Central. That is an entitlement boundary, not a versioning problem.
 ## Reproducing
 
 ```bash
-# build and test  (83 unit tests, no database or display needed)
+# build and test  (107 unit tests, no database or display needed)
 mvn clean verify
 
 # start the application
 ./run.sh
 
-# start the read-only API
+# start the API and the web interface
 ./tools/run-api.sh 18080
+open http://127.0.0.1:18080/
 curl -s http://127.0.0.1:18080/api/cards | head -c 300
+
+# exercise the write endpoints, and seed more children through them
+postman collection run "postman/collections/KiGa 3000"
+postman collection run "postman/collections/Card Seeding" \
+  -d postman/datafiles/new-cards.json
 
 # checks that need a live database (named *Check, so surefire skips them)
 mvn -q test-compile dependency:build-classpath -Dmdep.outputFile=target/cp.txt
@@ -820,8 +889,24 @@ Recorded rather than quietly left:
   Generifying is a large diff with real behaviour risk, so it has not been attempted.
 - **`KigaCardNewTest` compiles but never runs.** It opens a Swing window, needs a live
   database and calls `System.exit(1)`, which would kill the surefire JVM.
-- **The API has no authentication.** The narrow projection is a stopgap, not a solution.
-  Anything beyond the current summary needs an auth story first.
+- **The API has no authentication, and it now accepts writes.** The narrow projection
+  and the loopback bind are what make that defensible, and both are stopgaps rather than
+  solutions. Anything beyond the current summary — a wider projection, a non-loopback
+  bind, or a second client — needs an auth story first, and the write endpoints raise
+  the stakes: read-only meant the worst case was disclosure, and now it is modification.
+- **The deployed cloud mocks still describe the read-only contract.** `postman/mocks/`
+  and `postman/collections/Cloud Mock Contract` were generated from the spec when the API
+  refused every write, so they answer `405` with `Allow: GET` to a `POST`. The spec has
+  moved; those artefacts have not. Regenerating them is straightforward, but redeploying
+  a mock is an outward-facing change, so it was left as a deliberate decision rather than
+  folded into this one.
+- **`HEAD` returns 405.** Supported wherever `GET` is, by the HTTP spec; here it falls
+  through to the unsupported-method branch. Nothing in the repository depends on it, but
+  it is a wart rather than a decision.
+- **The web interface has no tests beyond the server side.** The handler, the asset
+  content types, the traversal refusal and the GDPR note are all asserted; the
+  JavaScript that drives the forms is not. Exercising it needs a browser in the loop,
+  which is the same shape of problem as the print check.
 
 ## License
 

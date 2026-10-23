@@ -1,0 +1,33 @@
+$kind: http-request
+description: |-
+  Wrong value: the path segment is not an integer at all.
+
+  Must be 400 rather than 404. The distinction matters because it is the difference
+  between "you asked wrongly" and "it is not here", and a client retrying a 404 is
+  reasonable where retrying this is not.
+url: "{{base_url}}/api/cards/abc"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 400, not 404", () => {
+        pm.response.to.have.status(400);
+        pm.expect(pm.response.code).to.not.eql(404);
+      });
+
+      const body = pm.response.json();
+
+      pm.test("Error body has the uniform shape", () => {
+        pm.expect(Object.keys(body).sort()).to.eql(["error", "status"]);
+        pm.expect(body.status).to.eql(400);
+      });
+
+      pm.test("Message says the input was not a number", () =>
+        pm.expect(body.error.toLowerCase()).to.include("not a number"));
+
+      pm.test("No stack trace reaches the client", () => {
+        pm.expect(body.error).to.not.match(/\bat [\w.$]+\(/);
+        pm.expect(body.error.toLowerCase()).to.not.include("exception in thread");
+      });
+    language: text/javascript
+order: 4000

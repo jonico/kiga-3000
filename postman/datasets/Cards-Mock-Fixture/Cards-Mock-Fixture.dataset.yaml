@@ -1,0 +1,21 @@
+type: dataset
+name: "Cards Mock Fixture"
+id: f7537ad6-83a3-4c2d-b973-08f4b471dc49
+description: "Static JSON fixture mirroring the KiGa 3000 API mock's card table. Drives the mock-backed leg of the review workflow; no database required."
+data_dir: .resources
+sources:
+  - from: embedded_datasource
+    datasource:
+      name: Karteikarte
+      id: 08daa8b7-70f7-4660-b1e0-76fc07ff8ddd
+      format: json
+      source_type: static
+      location:
+        type: local_filesystem
+        value: cards.json
+views:
+  - from: embedded_view
+    view:
+      name: Karteikarte_default_view
+      id: b72c5374-5f32-4498-9087-6d233890197e
+      query: SELECT id, vorname, nachname, gruppe FROM Karteikarte ORDER BY id

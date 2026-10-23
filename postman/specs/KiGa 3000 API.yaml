@@ -1,0 +1,570 @@
+openapi: 3.0.3
+
+info:
+  title: KiGa 3000 API
+  version: 1.0.0
+  description: |
+    HTTP API over the KiGa 3000 card index, plus the web interface served alongside it.
+
+    The application itself is a Swing desktop client, and Swing does not run on mobile.
+    Any path to a phone client means the data has to be reachable over HTTP first, with
+    the desktop client and the phone talking to the same service. This API is that step,
+    kept deliberately small.
+
+    ## Deliberate limits
+
+    - **Writes are confined to the summary projection.** The API reads and writes the
+      same six fields and no others. See `CardSummary` and `CardDraft`: religion,
+      nationality, vaccination history, illnesses, doctor, insurer, health notes,
+      contacts, addresses and the free-text fields can neither be read nor written here.
+      They are special-category personal data under GDPR Article 9, and the desktop
+      client — used by someone sitting in the Kindergarten — remains the only way to
+      touch them. A write API whose input accepted the whole entity would let an
+      unauthenticated caller fill in a child's health record even though it could never
+      read one back, which is worse rather than better.
+    - **Unknown fields are refused, not ignored.** A body naming a column outside the
+      writable projection gets a `400` that says so. Silently dropping it would leave
+      the caller believing a health note had been stored.
+    - **`PATCH` is absent on purpose.** A partial update of a five-field projection buys
+      nothing, and the ambiguity over whether an omitted field means "leave it alone" or
+      "clear it" is exactly the kind of thing that quietly erases a date of birth.
+    - **Loopback only.** Bound to `127.0.0.1`, never `0.0.0.0`, so neither the API nor
+      the web interface is reachable from the network even by accident. This is what
+      stands in for the authentication story that does not exist yet, and it is the
+      reason the write endpoints are defensible at all.
+    - **Dates are validated, then normalised.** Both `dd.MM.yyyy` and ISO `uuuu-MM-dd`
+      are accepted on input and always stored and returned as `dd.MM.yyyy`. Validation
+      is not optional politeness: the persistence layer maps an unparseable date to SQL
+      `NULL` rather than failing, so without a check at this boundary a typo in a date
+      of birth would be accepted and silently stored as "no date".
+    - **Not started by the desktop application.** The server has its own `main`, so
+      running the Swing client never opens a socket.
+
+    ## Web interface
+
+    `GET /` serves a small HTML/CSS/JavaScript client for the same six fields, packaged
+    inside the jar. It is not described below because it is not part of the API surface;
+    it is a consumer of it.
+
+    Every response is `application/json; charset=utf-8`. Names are German and contain
+    umlauts; the serialiser escapes quotes, backslashes and control characters and emits
+    everything else as UTF-8.
+  license:
+    name: See repository LICENSE
+    url: https://github.com/jonico/kiga-3000/blob/main/LICENSE
+
+servers:
+  - url: http://127.0.0.1:8080
+    description: Local loopback server (default port 8080; pass another as the first argument to KigaApiServer)
+
+tags:
+  - name: Health
+    description: Service liveness.
+  - name: Cards
+    description: Card summaries from the Karteikarte index.
+
+paths:
+  /api/health:
+    get:
+      tags: [Health]
+      operationId: getHealth
+      summary: Service health
+      description: Returns `200` with a fixed payload whenever the server is up. Takes no parameters and never fails.
+      responses:
+        "200":
+          description: Service is up.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Health"
+              example:
+                status: ok
+                service: kiga3000
+                api: read-write
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/cards:
+    get:
+      tags: [Cards]
+      operationId: listCards
+      summary: List all card summaries
+      description: |
+        Returns every card summary in repository order.
+
+        The summary intentionally omits sensitive fields such as religion, health notes,
+        vaccinations, illnesses, doctor and insurer data.
+      responses:
+        "200":
+          description: All card summaries. Empty array if the index holds no cards.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardSummary"
+              example:
+                - id: 1
+                  gruppe: 1
+                  vorname: Anna
+                  nachname: Musterkind
+                  geburtsdatum: "11.03.2020"
+                  eintritt: "01.09.2023"
+                - id: 2
+                  gruppe: 1
+                  vorname: Ben
+                  nachname: Beispiel
+                  geburtsdatum: "20.11.2020"
+                  eintritt: "01.09.2023"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+    post:
+      tags: [Cards]
+      operationId: createCard
+      summary: Create a card
+      description: |
+        Creates a card from the writable projection and returns it with the id the
+        database assigned.
+
+        Only the `CardDraft` fields are set. Every other column keeps the entity's
+        default, so the sensitive columns are never populated over HTTP.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardDraft"
+            example:
+              gruppe: 3
+              vorname: Mira
+              nachname: Bergmann
+              geburtsdatum: "14.03.2020"
+              eintritt: "01.09.2023"
+      responses:
+        "201":
+          description: The created card.
+          headers:
+            Location:
+              description: Path of the created card.
+              schema:
+                type: string
+                pattern: '^/api/cards/\d+$'
+              example: /api/cards/18
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardSummary"
+              example:
+                id: 18
+                gruppe: 3
+                vorname: Mira
+                nachname: Bergmann
+                geburtsdatum: "14.03.2020"
+                eintritt: "01.09.2023"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/cards/{id}:
+    get:
+      tags: [Cards]
+      operationId: getCardById
+      summary: Get one card summary by id
+      parameters:
+        - $ref: "#/components/parameters/CardId"
+      responses:
+        "200":
+          description: The card summary.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardSummary"
+              example:
+                id: 12
+                gruppe: 2
+                vorname: Elias
+                nachname: Roßberg
+                geburtsdatum: "08.02.2019"
+                eintritt: "01.09.2022"
+        "400":
+          description: The `id` path segment is not an integer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                status: 400
+                error: 'Not a number: For input string: "abc"'
+        "404":
+          description: No card exists with that id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                status: 404
+                error: No card with id 99999
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    put:
+      tags: [Cards]
+      operationId: replaceCard
+      summary: Replace the writable fields of a card
+      description: |
+        Replaces the writable fields of an existing card.
+
+        "Replace" in the `CardDraft` sense rather than the HTTP-`PUT`-replaces-the-whole
+        -resource sense: the columns this API cannot see are left exactly as they are.
+        Overwriting a child's health record with defaults because it was absent from a
+        request body would be data loss dressed up as protocol correctness.
+      parameters:
+        - $ref: "#/components/parameters/CardId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CardDraft"
+            example:
+              gruppe: 4
+              vorname: Mira
+              nachname: Bergmann
+              geburtsdatum: "14.03.2020"
+              eintritt: "01.09.2023"
+      responses:
+        "200":
+          description: The updated card.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CardSummary"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          description: No card exists with that id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                status: 404
+                error: No card with id 99999
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    delete:
+      tags: [Cards]
+      operationId: deleteCard
+      summary: Delete a card
+      description: |
+        Deletes a card. Returns `204` with no body — there is nothing useful to say
+        about a card that no longer exists. Deleting an id that is already gone is a
+        `404` rather than a silent success.
+      parameters:
+        - $ref: "#/components/parameters/CardId"
+      responses:
+        "204":
+          description: The card was deleted. No body.
+        "400":
+          description: The `id` path segment is not an integer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                status: 400
+                error: 'Not a number: For input string: "abc"'
+        "404":
+          description: No card exists with that id.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                status: 404
+                error: No card with id 99999
+        "405":
+          $ref: "#/components/responses/MethodNotAllowed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/groups/{gruppe}/cards:
+    get:
+      tags: [Cards]
+      operationId: listCardsByGroup
+      summary: List card summaries in one group
+      parameters:
+        - $ref: "#/components/parameters/Gruppe"
+      responses:
+        "200":
+          description: Card summaries in the group. Empty array if the group exists in range but holds no cards.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CardSummary"
+              example:
+                - id: 16
+                  gruppe: 3
+                  vorname: Amelie
+                  nachname: Vogtländer
+                  geburtsdatum: "06.05.2018"
+                  eintritt: "01.09.2021"
+        "400":
+          description: The `gruppe` path segment is not an integer.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                status: 400
+                error: 'Not a number: For input string: "abc"'
+        "404":
+          description: The group number is outside the supported range `0..255`.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                status: 404
+                error: "No such group: 300"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  parameters:
+    CardId:
+      name: id
+      in: path
+      required: true
+      description: Card id. Must be an integer; a non-numeric value returns `400`, an unknown one `404`.
+      schema:
+        type: integer
+        format: int32
+      example: 2
+
+    Gruppe:
+      name: gruppe
+      in: path
+      required: true
+      description: |
+        Group number. Must be an integer in `0..255` — the backend stores the group as a
+        byte. A non-numeric value returns `400`; a numeric value outside the range
+        returns `404`.
+      schema:
+        type: integer
+        format: int32
+        minimum: 0
+        maximum: 255
+      example: 2
+
+  schemas:
+    CardSummary:
+      type: object
+      title: Card summary
+      description: |
+        The narrow projection the API exposes for a card. The underlying table has 39
+        columns; the six below are the ones a Kindergarten group list would print on paper
+        anyway. Everything else — religion, nationality, vaccination history, illnesses,
+        doctor, health insurer, free-text health notes — is withheld.
+      required: [id, gruppe, vorname, nachname, geburtsdatum, eintritt]
+      properties:
+        id:
+          type: integer
+          format: int32
+          description: Card id, unique within the index.
+          example: 2
+        gruppe:
+          type: integer
+          format: int32
+          minimum: 0
+          maximum: 255
+          description: Group number the child belongs to.
+          example: 1
+        vorname:
+          type: string
+          nullable: true
+          description: First name. May contain German umlauts. `null` if unset in the index.
+          example: Anna
+        nachname:
+          type: string
+          nullable: true
+          description: Last name. May contain German umlauts. `null` if unset in the index.
+          example: Musterkind
+        geburtsdatum:
+          type: string
+          nullable: true
+          pattern: '^\d{2}\.\d{2}\.\d{4}$'
+          description: |
+            Date of birth as German-formatted text, `dd.MM.yyyy`. Deliberately not an
+            ISO `date`: the backend passes the stored string through unparsed.
+          example: "11.03.2020"
+        eintritt:
+          type: string
+          nullable: true
+          pattern: '^\d{2}\.\d{2}\.\d{4}$'
+          description: Date of entry into the Kindergarten, German-formatted text, `dd.MM.yyyy`.
+          example: "01.09.2023"
+
+    CardDraft:
+      type: object
+      title: Card draft
+      description: |
+        What the API accepts when a card is created or replaced — the mirror image of
+        `CardSummary`, and narrow for the same reason.
+
+        The table has 39 columns, including religion, nationality, vaccination history,
+        illnesses, doctor, health insurer and free-text health notes. None of them can be
+        read through this API, and this schema is what stops them being written through
+        it either. Because the writable surface is exactly the readable surface, the
+        projection remains the protection while there is no authentication.
+
+        Any property not listed here is **refused with `400`**, not ignored. There is
+        deliberately no `id`: it is assigned by the database on create and taken from the
+        URL on replace, so sending one is also a `400`.
+      required: [gruppe, vorname, nachname]
+      additionalProperties: false
+      properties:
+        gruppe:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 9
+          description: |
+            Group number. Narrower than the `0..255` a group *path* accepts, because
+            these are the groups the application actually uses — 9 is the data-retention
+            group. Must be a JSON number; `"1"` is a `400`.
+          example: 3
+        vorname:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: |
+            First name. Required and non-blank. Bounded at 50 characters to match the
+            column, so an over-long name is a `400` here rather than a data-truncation
+            error from the driver.
+          example: Mira
+        nachname:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Last name. Required and non-blank, bounded at 50 characters.
+          example: Bergmann
+        geburtsdatum:
+          type: string
+          description: |
+            Date of birth. Optional; omit it or send `""` for "no date". Accepts
+            `dd.MM.yyyy` or ISO `uuuu-MM-dd` and is always stored and returned as
+            `dd.MM.yyyy`. An impossible date such as `30.02.2020` is a `400`.
+          example: "14.03.2020"
+        eintritt:
+          type: string
+          description: Date of entry. Same rules as `geburtsdatum`.
+          example: "01.09.2023"
+
+    Health:
+      type: object
+      title: Health status
+      description: Fixed liveness payload. All three fields are constants in the current build.
+      required: [status, service, api]
+      properties:
+        status:
+          type: string
+          enum: [ok]
+          description: Always `ok` — the endpoint returns `200` or nothing at all.
+        service:
+          type: string
+          enum: [kiga3000]
+        api:
+          type: string
+          enum: [read-write]
+
+    Error:
+      type: object
+      title: Error
+      description: Uniform error body used by every non-`2xx` response.
+      required: [status, error]
+      properties:
+        status:
+          type: integer
+          format: int32
+          description: Repeats the HTTP status code.
+          example: 404
+        error:
+          type: string
+          description: Human-readable message. Never contains a stack trace.
+          example: No card with id 99999
+
+  responses:
+    InternalServerError:
+      description: |
+        An unexpected failure inside a handler. The router catches every `RuntimeException`
+        and returns this rather than letting a stack trace reach the client, so the body is
+        always the generic message below.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            status: 500
+            error: Internal error
+
+    BadRequest:
+      description: |
+        The request body was not acceptable. Covers malformed JSON, a nested object or
+        array (a card is flat, so nesting is refused outright), a duplicate field, a
+        missing or blank name, a name over 50 characters, a `gruppe` outside `1..9` or
+        sent as a string, an impossible date, an `id` in the body, and any field name
+        outside the writable projection.
+
+        The message names the offending field. For a non-writable field it says so
+        explicitly rather than dropping it, because a caller who sends `religion` must
+        not be left believing it was stored.
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          examples:
+            notWritable:
+              summary: A field outside the writable projection
+              value:
+                status: 400
+                error: >-
+                  Field not writable through this API: religion. Only gruppe, vorname,
+                  nachname, geburtsdatum and eintritt can be written; the rest of the
+                  card is special-category personal data and is desktop-only
+            impossibleDate:
+              summary: A date that does not exist
+              value:
+                status: 400
+                error: "geburtsdatum must be a real date in dd.MM.yyyy format, was: 30.02.2020"
+            nested:
+              summary: A nested body
+              value:
+                status: 400
+                error: "Malformed JSON: nested objects and arrays are not accepted; a card is flat"
+
+    MethodNotAllowed:
+      description: |
+        The method is not supported on any `/api` path. `GET`, `POST`, `PUT`, `DELETE`
+        and `OPTIONS` are; `PATCH` deliberately is not.
+      headers:
+        Allow:
+          description: Methods the endpoint accepts.
+          schema:
+            type: string
+            example: GET, POST, PUT, DELETE, OPTIONS
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            status: 405
+            error: PATCH is not supported

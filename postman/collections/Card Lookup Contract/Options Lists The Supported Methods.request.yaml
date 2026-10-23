@@ -1,0 +1,15 @@
+$kind: http-request
+description: |-
+  OPTIONS answers 204 with the same Allow list a 405 advertises.
+url: "{{base_url}}/api/cards"
+method: OPTIONS
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 204", () => pm.response.to.have.status(204));
+      pm.test("Allow lists the supported methods", () => {
+        const allow = pm.response.headers.get("Allow");
+        ["GET", "POST", "PUT", "DELETE"].forEach((m) => pm.expect(allow).to.include(m));
+      });
+    language: text/javascript
+order: 8400

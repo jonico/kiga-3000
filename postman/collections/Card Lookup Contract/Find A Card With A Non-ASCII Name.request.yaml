@@ -1,0 +1,46 @@
+$kind: http-request
+description: |-
+  Locates a card whose name contains non-ASCII characters and hands its id to the next
+  request via a collection variable.
+
+  This exists because the previous version of the umlaut check hardcoded id 4 and the
+  surname "Daeubler", which passed against one developer's local database and failed in
+  CI: db/seed.sql puts "David Faelschle" at id 4 - a name with no umlaut in it at all -
+  and keeps its umlaut rows at ids 12, 13, 14 and 16. Hardcoding either the id or the
+  name couples the suite to one particular snapshot of the fixture.
+
+  Discovering the row instead makes the check survive any reseeding, and asserts
+  something worth asserting on its own: db/seed.sql documents that it deliberately
+  includes ae/oe/ue/ss characters so the encoding paths are exercised, so a fixture with
+  no non-ASCII name at all is itself a regression.
+url: "{{base_url}}/api/cards"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 200", () => pm.response.to.have.status(200));
+
+      const cards = pm.response.json();
+
+      pm.test("Returns a non-empty array of cards", () => {
+        pm.expect(cards).to.be.an("array");
+        pm.expect(cards.length).to.be.above(0);
+      });
+
+      // Anything outside printable ASCII. Matches umlauts and sharp s without naming
+      // them, so a fixture using different accented characters still satisfies this.
+      const nonAscii = /[^\x20-\x7E]/;
+      const found = cards.find(
+        (c) => nonAscii.test(c.vorname || "") || nonAscii.test(c.nachname || ""));
+
+      pm.test("Fixture contains at least one non-ASCII name to exercise encoding", () =>
+        pm.expect(found, "no card had a non-ASCII vorname or nachname").to.not.be.undefined);
+
+      if (found) {
+        pm.collectionVariables.set("umlaut_id", String(found.id));
+        pm.collectionVariables.set("umlaut_vorname", found.vorname);
+        pm.collectionVariables.set("umlaut_nachname", found.nachname);
+        console.log(`Non-ASCII card for the next request: id ${found.id}, ${found.vorname} ${found.nachname}`);
+      }
+    language: text/javascript
+order: 1500

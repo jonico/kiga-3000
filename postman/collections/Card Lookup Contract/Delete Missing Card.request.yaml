@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  Deleting an id with nothing behind it is 404, not a silent 204.
+
+  A client that deletes twice should find out the second time.
+url: "{{base_url}}/api/cards/99999"
+method: DELETE
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 404", () => pm.response.to.have.status(404));
+
+      pm.test("Error body has the uniform shape", () => {
+        const body = pm.response.json();
+        pm.expect(Object.keys(body).sort()).to.eql(["error", "status"]);
+        pm.expect(body.status).to.eql(pm.response.code);
+      });
+    language: text/javascript
+order: 7600

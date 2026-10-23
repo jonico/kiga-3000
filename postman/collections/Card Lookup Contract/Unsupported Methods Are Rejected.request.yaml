@@ -1,0 +1,41 @@
+$kind: http-request
+description: |-
+  Unsupported methods get 405 plus an Allow header rather than a 404.
+
+  This request used to assert that the API was read-only and advertised `Allow: GET`.
+  It no longer is: POST, PUT and DELETE exist, confined to the six writable summary
+  fields. What survives from the original intent is the part that was actually about
+  the contract - an unsupported method is refused explicitly, and the response says
+  which methods are supported instead of leaving a client to guess.
+
+  PATCH is the method chosen to probe that, and it is deliberately absent rather than
+  merely unimplemented: a partial update of a five-field projection buys nothing, and
+  the ambiguity over whether an omitted field means "leave it alone" or "clear it" is
+  the kind of thing that quietly erases a date of birth.
+
+  Sent against an id that exists, so a 405 here cannot be mistaken for the resource
+  being absent.
+url: "{{base_url}}/api/cards/1"
+method: PATCH
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 405", () => pm.response.to.have.status(405));
+
+      pm.test("Allow header advertises the methods that are supported", () => {
+        const allow = pm.response.headers.get("Allow");
+        pm.expect(allow, "Allow header missing").to.be.a("string");
+        ["GET", "POST", "PUT", "DELETE"].forEach((method) =>
+          pm.expect(allow).to.include(method));
+      });
+
+      pm.test("Allow header does not advertise PATCH", () =>
+        pm.expect(pm.response.headers.get("Allow")).to.not.include("PATCH"));
+
+      pm.test("Error body has the uniform shape", () => {
+        const body = pm.response.json();
+        pm.expect(Object.keys(body).sort()).to.eql(["error", "status"]);
+        pm.expect(body.status).to.eql(405);
+      });
+    language: text/javascript
+order: 6000
