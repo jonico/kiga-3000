@@ -14,8 +14,17 @@ sources:
       source_type: dynamic
       location:
         type: mysql
-        value: KiGa:Kiga3000@tcp(localhost:3306)/Kindergarten
-        table: Karteikarte
+        config:
+          user:
+            $vaultId: postman-cli-env
+            $secretId: DB_USER
+          password:
+            $vaultId: postman-cli-env
+            $secretId: DB_PASSWORD
+          host: localhost
+          database: Kindergarten
+          table: Karteikarte
+          port: 3306
       slug: Karteikarte
 views:
   - from: embedded_view

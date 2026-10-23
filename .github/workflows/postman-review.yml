@@ -46,7 +46,7 @@ concurrency:
 
 env:
   # Pinned so a CLI release cannot change review outcomes on its own.
-  POSTMAN_CLI_VERSION: "1.56.1"
+  POSTMAN_CLI_VERSION: "1.76.0"
   SPEC: postman/specs/KiGa 3000 API.yaml
   CLOUD_CONTRACT: postman/collections/Cloud Mock Contract
   CLOUD_MOCK_FIXTURE: https://kiga-3000-api-mock-008fa0.mock.automotive-demo.postman.dev
@@ -112,6 +112,13 @@ jobs:
     name: Collection run — MySQL dataset
     runs-on: ubuntu-latest
 
+    env:
+      # The dataset no longer carries a DSN credential: its user and password are
+      # env: references (CLI >= 1.76), resolved from POSTMAN_VAULT_<NAME> at run time.
+      # These are the throwaway account created for the service container below.
+      POSTMAN_VAULT_DB_USER: KiGa
+      POSTMAN_VAULT_DB_PASSWORD: Kiga3000
+
     services:
       mysql:
         image: mysql:8.0
@@ -168,7 +175,7 @@ jobs:
           m -uroot -proot < db/schema.sql
 
           # Recreate the account the application expects. persistence.xml and the
-          # dataset DSN both hardcode KiGa/Kiga3000 against localhost/Kindergarten, so
+          # dataset's credentials both assume KiGa/Kiga3000 against localhost/Kindergarten, so
           # matching them here is what lets both run unmodified in CI.
           m -uroot -proot -e "
             CREATE USER IF NOT EXISTS 'KiGa'@'%' IDENTIFIED BY 'Kiga3000';
