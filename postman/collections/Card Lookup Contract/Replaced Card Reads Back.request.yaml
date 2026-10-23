@@ -1,0 +1,19 @@
+$kind: http-request
+description: |-
+  Write path, step 4 of 6: the replacement was stored, not just echoed.
+url: "{{base_url}}/api/cards/{{created_id}}"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 200", () => pm.response.to.have.status(200));
+      const card = pm.response.json();
+      pm.test("Stored values are the replacement values", () => {
+        pm.expect(card.vorname).to.eql("Zoë");
+        pm.expect(card.nachname).to.eql("Straße");
+        pm.expect(card.gruppe).to.eql(9);
+        pm.expect(card.geburtsdatum).to.eql("11.08.2018");
+        pm.expect(card.eintritt).to.eql("01.09.2021");
+      });
+    language: text/javascript
+order: 7300

@@ -1,8 +1,11 @@
 $kind: collection
 description: |-
-  Contract tests for GET /api/cards/{id}, driven by hardcoded ids rather than iteration
-  data. The same endpoint is exercised repeatedly to cover a card that exists, ids that
-  do not, and inputs that are not valid ids at all.
+  Contract tests for the card API: GET /api/cards/{id} over cards that exist, ids that do
+  not and inputs that are not ids at all, then the write paths (POST, PUT, DELETE,
+  OPTIONS) as one create / read / replace / read / delete / read lifecycle plus the
+  rejections. Driven by hardcoded ids rather than iteration data. The write requests
+  share the new id through the created_id collection variable, so they must run in
+  order, and they delete what they create.
 
   Deliberately free of iteration data: every request carries its own id, so the suite
   says the same thing whatever the data source. That also lets it run unchanged against

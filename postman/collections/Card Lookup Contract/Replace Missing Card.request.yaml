@@ -1,0 +1,27 @@
+$kind: http-request
+description: |-
+  PUT does not create. Replacing an id with nothing behind it is 404.
+url: "{{base_url}}/api/cards/99999"
+method: PUT
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "gruppe": 1,
+      "vorname": "Nobody",
+      "nachname": "Home"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 404", () => pm.response.to.have.status(404));
+
+      pm.test("Error body has the uniform shape", () => {
+        const body = pm.response.json();
+        pm.expect(Object.keys(body).sort()).to.eql(["error", "status"]);
+        pm.expect(body.status).to.eql(pm.response.code);
+      });
+    language: text/javascript
+order: 7700

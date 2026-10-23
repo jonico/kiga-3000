@@ -48,8 +48,15 @@
  * default.js is left exactly as generated so `postman mock generate --update` can
  * refresh it from the spec.
  *
- * Response semantics mirror KigaApiServer: read-only, 405 on any non-GET, 400 on a
- * non-numeric path segment, 404 for unknown ids and for groups outside 0..255.
+ * Response semantics mirror KigaApiServer: GET, POST, PUT, DELETE and OPTIONS, 405 with
+ * an Allow header on anything else, 400 on a non-numeric path segment or an invalid
+ * body, 404 for unknown ids and for groups outside 0..255.
+ *
+ * Writes go through the same pm.datasets handle as reads. Verified: INSERT, UPDATE and
+ * DELETE reach the MySQL table itself, not just the SQLite copy. The one thing the
+ * engine does not hand back is the generated key, so a create reads the new id back
+ * with MAX(id). That is racy under concurrent writers and fine for a mock that serves
+ * one contract run at a time.
  */
 const http = require('http');
 
@@ -84,22 +91,209 @@ async function rows(sql, params = []) {
   return out;
 }
 
+
+const ALLOWED = 'GET, POST, PUT, DELETE, OPTIONS';
+const MAX_BODY_BYTES = 64 * 1024;
+const MIN_GRUPPE = 1;
+const MAX_GRUPPE = 9;
+const MAX_NAME = 50;
+const WRITABLE = ['gruppe', 'vorname', 'nachname', 'geburtsdatum', 'eintritt'];
+
+class BadRequest extends Error {}
+class NotFound extends Error {}
+
+function sendEmpty(res, status, headers = {}) {
+  res.writeHead(status, headers);
+  res.end();
+}
+
+function readBody(req) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on('data', (chunk) => {
+      size += chunk.length;
+      if (size > MAX_BODY_BYTES) {
+        reject(new BadRequest(`Request body larger than ${MAX_BODY_BYTES} bytes`));
+        req.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    req.on('end', () => resolve(Buffer.concat(chunks).toString('utf8')));
+    req.on('error', reject);
+  });
+}
+
+/** A JSON object, or a 400 phrased like the Java API's. */
+function parseObject(text) {
+  let value;
+  try {
+    value = JSON.parse(text);
+  } catch (e) {
+    throw new BadRequest(`Malformed JSON: ${e.message}`);
+  }
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new BadRequest('Malformed JSON: expected a JSON object');
+  }
+  return value;
+}
+
+function requiredName(fields, name) {
+  const value = fields[name];
+  if (typeof value !== 'string' || value.trim() === '') {
+    throw new BadRequest(`${name} is required and must be a non-empty string`);
+  }
+  const trimmed = value.trim();
+  if ([...trimmed].length > MAX_NAME) {
+    throw new BadRequest(
+      `${name} must be at most ${MAX_NAME} characters, was ${[...trimmed].length}`);
+  }
+  return trimmed;
+}
+
+/**
+ * dd.MM.yyyy or yyyy-MM-dd in, an ISO date (or null for "no date") out. Round-tripping
+ * through Date.UTC rejects 31.02 the way the Java side's strict parser does.
+ */
+function optionalDate(fields, name) {
+  const value = fields[name];
+  if (value === undefined || value === null) return null;
+  if (typeof value !== 'string') {
+    throw new BadRequest(`${name} must be a string in dd.MM.yyyy format`);
+  }
+  const text = value.trim();
+  if (text === '') return null;
+  let m = text.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+  let [d, mo, y] = m ? [m[1], m[2], m[3]] : [];
+  if (!m) {
+    m = text.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+    if (m) [y, mo, d] = [m[1], m[2], m[3]];
+  }
+  const probe = m && new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d)));
+  const real = probe && probe.getUTCFullYear() === Number(y)
+    && probe.getUTCMonth() === Number(mo) - 1 && probe.getUTCDate() === Number(d);
+  if (!real) {
+    throw new BadRequest(
+      `${name} must be a real date in dd.MM.yyyy format, was: ${text}`);
+  }
+  return `${y}-${mo}-${d}`;
+}
+
+/** Same checks, same order and same wording as KigaApiServer.draft. */
+function draft(text) {
+  const fields = parseObject(text);
+
+  for (const name of Object.keys(fields)) {
+    if (WRITABLE.includes(name)) continue;
+    if (name === 'id') {
+      throw new BadRequest('id is assigned by the server on create and taken from the URL'
+        + ' on replace; remove it from the body');
+    }
+    throw new BadRequest(`Field not writable through this API: ${name}. Only gruppe,`
+      + ' vorname, nachname, geburtsdatum and eintritt can be written; the rest of the'
+      + ' card is special-category personal data and is desktop-only');
+  }
+
+  const gruppe = fields.gruppe;
+  if (gruppe === undefined || gruppe === null) throw new BadRequest('gruppe is required');
+  if (!Number.isInteger(gruppe)) {
+    throw new BadRequest(`gruppe must be a whole number, was: ${gruppe}`);
+  }
+  if (gruppe < MIN_GRUPPE || gruppe > MAX_GRUPPE) {
+    throw new BadRequest(
+      `gruppe must be between ${MIN_GRUPPE} and ${MAX_GRUPPE}, was ${gruppe}`);
+  }
+
+  return {
+    gruppe,
+    vorname: requiredName(fields, 'vorname'),
+    nachname: requiredName(fields, 'nachname'),
+    geburtsdatum: optionalDate(fields, 'geburtsdatum'),
+    eintritt: optionalDate(fields, 'eintritt'),
+  };
+}
+
+/** The API's contract is "" for no date; strftime over NULL gives null. */
+const shape = (row) => ({
+  ...row,
+  geburtsdatum: row.geburtsdatum ?? '',
+  eintritt: row.eintritt ?? '',
+});
+
+async function cardById(id) {
+  const found = await rows(`SELECT ${COLUMNS} FROM Karteikarte WHERE id = ?`, [id]);
+  return found.length ? shape(found[0]) : null;
+}
+
+const parseId = (raw) => {
+  if (!/^-?\d+$/.test(raw)) {
+    throw new BadRequest(`Not a number: For input string: "${raw}"`);
+  }
+  return Number(raw);
+};
+
+async function create(req, res, pathname, segments) {
+  if (segments.length !== 1 || segments[0] !== 'cards') {
+    return send(res, 404, error(404, `Cannot create at ${pathname}`));
+  }
+  const card = draft(await readBody(req));
+  await rows(
+    'INSERT INTO Karteikarte (gruppe, kindvorname, kindnachname, kindgeburt, eintritt)'
+    + ' VALUES (?, ?, ?, ?, ?)',
+    [card.gruppe, card.vorname, card.nachname, card.geburtsdatum, card.eintritt]);
+  const [{ id }] = await rows('SELECT MAX(id) AS id FROM Karteikarte');
+  return send(res, 201, await cardById(id), { Location: `/api/cards/${id}` });
+}
+
+async function replace(req, res, pathname, segments) {
+  if (segments.length !== 2 || segments[0] !== 'cards') {
+    return send(res, 404, error(404, `Cannot replace at ${pathname}`));
+  }
+  const id = parseId(decodeURIComponent(segments[1]));
+  const card = draft(await readBody(req));
+  if (!(await cardById(id))) throw new NotFound(`No card with id ${id}`);
+  await rows(
+    'UPDATE Karteikarte SET gruppe = ?, kindvorname = ?, kindnachname = ?,'
+    + ' kindgeburt = ?, eintritt = ? WHERE id = ?',
+    [card.gruppe, card.vorname, card.nachname, card.geburtsdatum, card.eintritt, id]);
+  return send(res, 200, await cardById(id));
+}
+
+async function remove(res, pathname, segments) {
+  if (segments.length !== 2 || segments[0] !== 'cards') {
+    return send(res, 404, error(404, `Cannot delete at ${pathname}`));
+  }
+  const id = parseId(decodeURIComponent(segments[1]));
+  if (!(await cardById(id))) throw new NotFound(`No card with id ${id}`);
+  await rows('DELETE FROM Karteikarte WHERE id = ?', [id]);
+  return sendEmpty(res, 204);
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const pathname = new URL(req.url || '', 'http://localhost').pathname;
 
-    // Read-only, exactly as the Java server: the method check comes first, so a POST to
-    // a path that does not exist is still a 405 rather than a 404.
+    const segments = pathname.replace(/^\/api\/?/, '').split('/');
+
+    if (req.method === 'OPTIONS') {
+      return sendEmpty(res, 204, { Allow: ALLOWED });
+    }
+    if (req.method === 'POST') return await create(req, res, pathname, segments);
+    if (req.method === 'PUT') return await replace(req, res, pathname, segments);
+    if (req.method === 'DELETE') return await remove(res, pathname, segments);
+    // The method check comes first, so an unsupported method on a path that does not
+    // exist is still a 405 rather than a 404.
     if (req.method !== 'GET') {
-      return send(res, 405, error(405, 'This API is read-only'), { Allow: 'GET' });
+      return send(res, 405, error(405, `${req.method} is not supported`), { Allow: ALLOWED });
     }
 
     if (pathname === '/api/health') {
-      return send(res, 200, { status: 'ok', service: 'kiga3000', api: 'read-only' });
+      return send(res, 200, { status: 'ok', service: 'kiga3000', api: 'read-write' });
     }
 
     if (pathname === '/api/cards') {
-      return send(res, 200, await rows(`SELECT ${COLUMNS} FROM Karteikarte ORDER BY id`));
+      return send(res, 200, (await rows(`SELECT ${COLUMNS} FROM Karteikarte ORDER BY id`)).map(shape));
     }
 
     const card = pathname.match(/^\/api\/cards\/([^/]+)$/);
@@ -111,7 +305,7 @@ const server = http.createServer(async (req, res) => {
       const found = await rows(
         `SELECT ${COLUMNS} FROM Karteikarte WHERE id = ?`, [Number(raw)]);
       return found.length
-        ? send(res, 200, found[0])
+        ? send(res, 200, shape(found[0]))
         : send(res, 404, error(404, `No card with id ${raw}`));
     }
 
@@ -125,12 +319,15 @@ const server = http.createServer(async (req, res) => {
       if (gruppe < 0 || gruppe > 255) {
         return send(res, 404, error(404, `No such group: ${raw}`));
       }
-      return send(res, 200, await rows(
-        `SELECT ${COLUMNS} FROM Karteikarte WHERE gruppe = ? ORDER BY id`, [gruppe]));
+      return send(res, 200, (await rows(
+        `SELECT ${COLUMNS} FROM Karteikarte WHERE gruppe = ? ORDER BY id`, [gruppe]))
+        .map(shape));
     }
 
     return send(res, 404, error(404, `No such resource: ${pathname}`));
   } catch (e) {
+    if (e instanceof BadRequest) return send(res, 400, error(400, e.message));
+    if (e instanceof NotFound) return send(res, 404, error(404, e.message));
     console.error('mock handler error:', e && (e.stack || e.message || String(e)));
     return send(res, 500, error(500, 'Internal error'));
   }

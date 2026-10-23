@@ -1,0 +1,17 @@
+$kind: http-request
+description: |-
+  Write path, step 6 of 6: the deleted card no longer exists.
+url: "{{base_url}}/api/cards/{{created_id}}"
+method: GET
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 404", () => pm.response.to.have.status(404));
+
+      pm.test("Error body has the uniform shape", () => {
+        const body = pm.response.json();
+        pm.expect(Object.keys(body).sort()).to.eql(["error", "status"]);
+        pm.expect(body.status).to.eql(pm.response.code);
+      });
+    language: text/javascript
+order: 7500

@@ -1,0 +1,32 @@
+$kind: http-request
+description: |-
+  The id is assigned by the server, so one in the body is an error rather than
+  something to be ignored or, worse, honoured.
+url: "{{base_url}}/api/cards"
+method: POST
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "id": 1,
+      "gruppe": 1,
+      "vorname": "Test",
+      "nachname": "Probe"
+    }
+scripts:
+  - type: afterResponse
+    code: |-
+      pm.test("Status is 400", () => pm.response.to.have.status(400));
+
+      pm.test("Error body has the uniform shape", () => {
+        const body = pm.response.json();
+        pm.expect(Object.keys(body).sort()).to.eql(["error", "status"]);
+        pm.expect(body.status).to.eql(pm.response.code);
+      });
+
+      pm.test("Error mentions the id", () =>
+        pm.expect(pm.response.json().error).to.include("id"));
+    language: text/javascript
+order: 7900
